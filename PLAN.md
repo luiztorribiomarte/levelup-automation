@@ -7,20 +7,35 @@
 - In-memory dedupe against webhook retries
 - Render free-tier deploy config
 
-## Phase 2: DM keyword handling + sequences
-- Subscribe to the `messages` webhook field
-- Keyword matching inside DMs (e.g. someone DMs "app" unprompted)
-- Multi-step sequences: reply → wait → follow-up (needs a small store; SQLite first)
+## Phase 1b (next): public reply + DM combo — the growth loop
+- Same comment webhook event, one extra API call: post a PUBLIC reply to the
+  comment in addition to the DM ("Sent you the link — check your DMs").
+- Why first: every public reply = more engagement on the post = more reach =
+  more keyword comments = more DMs. This is the viral loop that makes
+  comment funnels scale. Smallest code change, biggest growth leverage.
 
-## Phase 3: broadcasts + tags
-- Tag contacts by trigger/behavior (SQLite/Postgres)
-- Manual broadcast to tagged lists (respect Meta rate limits + 24h window rules)
-- Tiny dashboard to view recent automations
+## Phase 2: story mentions + DM keyword auto-replies
+- Subscribe to the `story_insights`/mentions webhook field: someone mentions
+  @projectlevelup1 in their story → auto-DM them the link.
+- Subscribe to the `messages` field: someone DMs "app" unprompted → instant
+  reply with the link.
 
-## Phase 4+: the long tail (only if you miss it)
-- Visual flow builder, story-mention triggers, WhatsApp, analytics.
-- Honest note: full ManyChat parity is months of work for a team. Phases 1–3
-  cover everything the Level Up funnel actually uses.
+## Phase 3: follow-up sequences + tags + broadcasts
+- They got the DM but didn't convert → one nudge later (Meta's 24h messaging
+  window; needs a small store — SQLite first, Postgres later).
+- Tag contacts by trigger/behavior; manual broadcasts to tagged lists
+  (respect rate limits + window rules).
+- Tiny dashboard to view recent automations.
+
+## Phase 4: Facebook Page support
+- Same triggers (comments, DMs) on the linked Facebook Page via the Messenger
+  Platform. Second audience, same codebase, no extra hosting cost.
+
+## Out of scope (platform limits, not build limits)
+- Threads: API covers posting only — Meta never opened DM automation there.
+- X: API starts at $100/mo — breaks the $0 rule; account suspended anyway.
+- Auto-DM on follow: impossible everywhere — Meta provides no follower webhook
+  and bans unsolicited DMs. Nobody (ManyChat included) can do this.
 
 ## Notes
 - `morluto/rea` (Reverse Engineer Anything) was evaluated as a possible way to
@@ -28,6 +43,8 @@
   publicly documented and the build targets Meta's official APIs with original
   code, which keeps it clear of ManyChat's ToS (reverse-engineering their
   service to clone it would violate it).
-- GitHub hosts the code; the running server lives on Render/Railway/Fly free
-  tier because webhooks need an always-on HTTPS server (GitHub Pages is
-  static-only and can't receive webhooks).
+- GitHub hosts the code; the running server lives on Render's free tier
+  because webhooks need an always-on HTTPS server (GitHub Pages is static-only
+  and can't receive webhooks). $0 constraint: Render free naps after ~15 min
+  idle — Meta retries webhooks so DMs still go out, possibly delayed on first
+  touch after idle. Oracle Cloud always-free VM is the no-sleep fallback.
