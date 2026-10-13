@@ -1,0 +1,1 @@
+{"dependencies":{"dotenv":"^16.4.5","express":"^4.21.2"},"description":"Self-hosted Instagram DM automation (personal ManyChat alternative) for the Level Up brand.","engines":{"node":">=20"},"main":"src/index.js","name":"levelup-automation","scripts":{"start":"node src/index.js"},"version":"0.1.0"}
