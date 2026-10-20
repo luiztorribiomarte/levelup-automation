@@ -44,6 +44,7 @@ app.get('/webhook', (req, res) => {
 // Meta POSTs every subscribed event here. Ack fast, work after.
 app.post('/webhook', (req, res) => {
   res.sendStatus(200);
+  console.log('webhook POST received:', JSON.stringify(req.body).slice(0, 2000));
   handleEvent(req.body).catch((e) => console.error('webhook error:', e.message));
 });
 
