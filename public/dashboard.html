@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level Up Automation — Dashboard</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222c;--line:#262b36;--txt:#eef1f6;--mut:#8b94a7;--acc:#e2b659;--grn:#4a7c59;--red:#c0392b;--rad:14px}
+  *{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+  a{color:var(--acc)}
+  .layout{display:flex;min-height:100vh}
+  .side{width:220px;background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;flex-shrink:0}
+  .logo{font-weight:800;font-size:18px;letter-spacing:.5px}.logo span{color:var(--acc)}
+  .side nav{margin-top:28px;display:flex;flex-direction:column;gap:6px}
+  .side nav button{background:none;border:0;color:var(--mut);text-align:left;padding:10px 12px;border-radius:10px;font-size:15px;cursor:pointer}
+  .side nav button.active{background:var(--panel2);color:var(--txt)}
+  .side .foot{margin-top:40px;font-size:12px;color:var(--mut);line-height:1.5}
+  .main{flex:1;padding:26px 30px;max-width:980px}
+  h1{font-size:24px;margin:0}
+  .sub{color:var(--mut);margin:6px 0 20px}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:14px 18px;min-width:130px}
+  .stat b{font-size:22px;display:block}.stat small{color:var(--mut)}
+  .rowhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 14px}
+  .btn{background:var(--acc);color:#111;border:0;padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px}
+  .btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+  .btn.danger{background:none;color:#ff8a80;border:1px solid var(--line)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:16px 18px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start}
+  .card .grow{flex:1;min-width:0}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);margin-right:6px}
+  .pill.kw{color:var(--acc);font-weight:700}
+  .reply{color:var(--mut);font-size:14px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0}
+  .track{position:absolute;inset:0;background:#333;border-radius:99px;transition:.2s;cursor:pointer}
+  .track:before{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+  .switch input:checked + .track{background:var(--grn)}
+  .switch input:checked + .track:before{transform:translateX(20px)}
+  .card .actions{display:flex;gap:8px;flex-shrink:0}
+  .empty{color:var(--mut);background:var(--panel);border:1px dashed var(--line);border-radius:var(--rad);padding:28px;text-align:center}
+  dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:16px;width:min(560px,92vw);padding:0}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  .dlg{padding:22px}
+  label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px}
+  input[type=text],textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px}
+  textarea{min-height:90px;resize:vertical}
+  .dlg .foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+  .check{display:flex;gap:8px;align-items:center;color:var(--txt);font-size:14px}
+  .check input{width:auto}
+  #login{max-width:380px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px}
+  .err{color:#ff8a80;font-size:14px;min-height:18px}
+  .act{display:flex;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px}
+  .act time{color:var(--mut);flex-shrink:0;font-size:12px;padding-top:2px}
+  .hidden{display:none!important}
+  @media(max-width:700px){.side{display:none}.main{padding:18px}}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <div class="logo">LEVEL UP <span>AUTOMATION</span></div>
+  <p class="sub">Your personal ManyChat-style dashboard. Log in to manage automations.</p>
+  <label>Dashboard password</label>
+  <input type="password" id="pw" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px" onkeydown="if(event.key==='Enter')doLogin()">
+  <div class="err" id="loginErr"></div>
+  <button class="btn" style="width:100%;margin-top:8px" onclick="doLogin()">Log in</button>
+</div>
+
+<div class="layout hidden" id="app">
+  <aside class="side">
+    <div class="logo">LEVEL UP <span>AUTOMATION</span></div>
+    <nav>
+      <button id="nav-auto" class="active" onclick="showTab('auto')">⚡ Automations</button>
+      <button id="nav-act" onclick="showTab('act')">🕘 Activity</button>
+      <button onclick="doLogout()">Log out</button>
+    </nav>
+    <div class="foot">Instagram is live.<br>Facebook &amp; Threads automations are coming next — Threads stays paused for now.</div>
+  </aside>
+
+  <main class="main">
+    <section id="tab-auto">
+      <h1>Automations</h1>
+      <p class="sub">When someone comments your keyword, they automatically get your DM. Changes go live instantly.</p>
+      <div class="stats">
+        <div class="stat"><b id="st-total">–</b><small>Automations</small></div>
+        <div class="stat"><b id="st-active">–</b><small>Active</small></div>
+        <div class="stat"><b id="st-dms">–</b><small>DMs sent (session)</small></div>
+      </div>
+      <div class="rowhead"><h2 style="margin:0;font-size:18px">Comment → DM</h2>
+        <button class="btn" onclick="openEditor()">+ New Automation</button></div>
+      <div id="list"></div>
+    </section>
+
+    <section id="tab-act" class="hidden">
+      <h1>Activity</h1>
+      <p class="sub">Recent webhook events, matches and DMs. Newest first.</p>
+      <div id="actlist"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="editor">
+  <div class="dlg">
+    <h2 style="margin:0" id="ed-title">New Automation</h2>
+    <label>Name (just for you)</label>
+    <input type="text" id="f-name" placeholder="e.g. APP keyword — waitlist DM">
+    <label>Platform</label>
+    <select id="f-platform">
+      <option value="instagram">Instagram — comments</option>
+      <option value="facebook" disabled>Facebook — coming soon</option>
+      <option value="threads" disabled>Threads — paused</option>
+    </select>
+    <label>When a comment…</label>
+    <select id="f-match">
+      <option value="contains">contains the keyword</option>
+      <option value="exact">is exactly the keyword</option>
+      <option value="starts">starts with the keyword</option>
+    </select>
+    <label>Keyword</label>
+    <input type="text" id="f-keyword" placeholder="e.g. app">
+    <label>Send this DM</label>
+    <textarea id="f-reply" maxlength="1000" placeholder="Here's your link: …"></textarea>
+    <div style="text-align:right;color:var(--mut);font-size:12px"><span id="count">0</span>/1000</div>
+    <label class="check"><input type="checkbox" id="f-enabled" checked> Active (on)</label>
+    <div class="err" id="edErr"></div>
+    <div class="foot">
+      <button class="btn ghost" onclick="document.getElementById('editor').close()">Cancel</button>
+      <button class="btn" onclick="saveEditor()">Save automation</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+let items = [], editingId = null;
+const $ = id => document.getElementById(id);
+
+async function api(path, opts={}) {
+  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
+  if (r.status === 401) { showLogin(); throw new Error('auth'); }
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(data.error || ('HTTP '+r.status));
+  return data;
+}
+function showLogin(){ $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+function showApp(){ $('login').classList.add('hidden'); $('app').classList.remove('hidden'); }
+
+async function doLogin(){
+  $('loginErr').textContent = '';
+  try {
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || 'Login failed');
+    showApp(); loadAll();
+  } catch(e){ $('loginErr').textContent = e.message; }
+}
+async function doLogout(){ await fetch('/api/logout',{method:'POST'}).catch(()=>{}); showLogin(); }
+
+async function loadAll(){
+  try {
+    items = await api('/api/automations');
+    const s = await api('/api/status');
+    $('st-total').textContent = s.automations; $('st-active').textContent = s.active; $('st-dms').textContent = s.dmsSent;
+    renderList();
+  } catch(e){ if(e.message!=='auth') $('list').innerHTML = '<div class="empty">'+e.message+'</div>'; }
+}
+function renderList(){
+  if (!items.length){ $('list').innerHTML = '<div class="empty">No automations yet. Hit <b>+ New Automation</b> to create your first keyword → DM rule.</div>'; return; }
+  $('list').innerHTML = items.map(a => `
+    <div class="card">
+      <div class="grow">
+        <h3>${esc(a.name)}</h3>
+        <span class="pill">${esc(a.platform)}</span><span class="pill">comment</span>
+        <span class="pill kw">"${esc(a.keyword)}"</span><span class="pill">${a.match}</span>
+        <div class="reply">${esc(a.reply)}</div>
+      </div>
+      <label class="switch" title="On / off"><input type="checkbox" ${a.enabled?'checked':''} onchange="toggleItem('${a.id}', this.checked)"><span class="track"></span></label>
+      <div class="actions">
+        <button class="btn ghost" onclick="openEditor('${a.id}')">Edit</button>
+        <button class="btn danger" onclick="delItem('${a.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function toggleItem(id, enabled){ await api('/api/automations/'+id,{method:'PUT',body:JSON.stringify({enabled})}); loadAll(); }
+async function delItem(id){ if(!confirm('Delete this automation?')) return; await api('/api/automations/'+id,{method:'DELETE'}); loadAll(); }
+
+function openEditor(id){
+  editingId = id || null;
+  const a = items.find(x=>x.id===id);
+  $('ed-title').textContent = a ? 'Edit Automation' : 'New Automation';
+  $('f-name').value = a?.name || ''; $('f-platform').value = a?.platform || 'instagram';
+  $('f-match').value = a?.match || 'contains'; $('f-keyword').value = a?.keyword || '';
+  $('f-reply').value = a?.reply || ''; $('f-enabled').checked = a ? a.enabled : true;
+  $('count').textContent = ($('f-reply').value||'').length; $('edErr').textContent='';
+  $('editor').showModal();
+}
+$('f-reply').addEventListener('input', e => $('count').textContent = e.target.value.length);
+
+async function saveEditor(){
+  const payload = { name:$('f-name').value, platform:$('f-platform').value, match:$('f-match').value,
+    keyword:$('f-keyword').value, reply:$('f-reply').value, enabled:$('f-enabled').checked };
+  try {
+    if (editingId) await api('/api/automations/'+editingId,{method:'PUT',body:JSON.stringify(payload)});
+    else await api('/api/automations',{method:'POST',body:JSON.stringify(payload)});
+    $('editor').close(); loadAll();
+  } catch(e){ $('edErr').textContent = e.message; }
+}
+
+function showTab(t){
+  $('tab-auto').classList.toggle('hidden', t!=='auto');
+  $('tab-act').classList.toggle('hidden', t!=='act');
+  $('nav-auto').classList.toggle('active', t==='auto');
+  $('nav-act').classList.toggle('active', t==='act');
+  if (t==='act') loadActivity();
+}
+async function loadActivity(){
+  const acts = await api('/api/activity').catch(()=>[]);
+  $('actlist').innerHTML = acts.length ? acts.map(x=>`<div class="act"><time>${new Date(x.time).toLocaleString()}</time><div><b>${esc(x.type)}</b> — ${esc(x.detail)}</div></div>`).join('')
+    : '<div class="empty">Nothing yet. When comments come in, they show up here.</div>';
+}
+
+loadAll().then(showApp).catch(()=>showLogin());
+</script>
+</body>
+</html>
