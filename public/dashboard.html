@@ -81,13 +81,18 @@
   <main class="main">
     <section id="tab-auto">
       <h1>Automations</h1>
-      <p class="sub">When someone comments your keyword, they automatically get your DM. Changes go live instantly.</p>
+      <p class="sub">Someone comments, replies to your story, or DMs your keyword → they automatically get your DM with your links. Changes go live instantly.</p>
       <div class="stats">
         <div class="stat"><b id="st-total">–</b><small>Automations</small></div>
         <div class="stat"><b id="st-active">–</b><small>Active</small></div>
         <div class="stat"><b id="st-dms">–</b><small>DMs sent (session)</small></div>
       </div>
-      <div class="rowhead"><h2 style="margin:0;font-size:18px">Comment → DM</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn ghost" onclick="openTemplate('comment')">📣 Template: Next post comments</button>
+        <button class="btn ghost" onclick="openTemplate('story_reply')">📸 Template: Story replies</button>
+        <button class="btn ghost" onclick="openTemplate('dm')">💬 Template: DM keyword</button>
+      </div>
+      <div class="rowhead"><h2 style="margin:0;font-size:18px">Your automations</h2>
         <button class="btn" onclick="openEditor()">+ New Automation</button></div>
       <div id="list"></div>
     </section>
@@ -111,17 +116,31 @@
       <option value="facebook" disabled>Facebook — coming soon</option>
       <option value="threads" disabled>Threads — paused</option>
     </select>
-    <label>When a comment…</label>
+    <label>Trigger — what starts this automation?</label>
+    <select id="f-trigger" onchange="triggerHint()">
+      <option value="comment">💬 Someone comments on a post</option>
+      <option value="story_reply">📸 Someone replies to my story</option>
+      <option value="dm">✉️ Someone DMs me</option>
+    </select>
+    <div id="f-trigger-hint" style="font-size:12px;color:var(--mut);margin-top:6px"></div>
+    <label>When it…</label>
     <select id="f-match">
       <option value="contains">contains the keyword</option>
       <option value="exact">is exactly the keyword</option>
       <option value="starts">starts with the keyword</option>
     </select>
-    <label>Keyword</label>
+    <label>Keyword <span id="kw-optional" class="hidden">(optional for story replies — blank fires on any reply)</span></label>
     <input type="text" id="f-keyword" placeholder="e.g. app">
+    <div id="media-wrap">
+      <label>Limit to one specific post? (optional — paste its Media ID, blank = all posts)</label>
+      <input type="text" id="f-media" placeholder="blank = every post">
+    </div>
     <label>Send this DM</label>
-    <textarea id="f-reply" maxlength="1000" placeholder="Here's your link: …"></textarea>
+    <textarea id="f-reply" maxlength="1000" placeholder="Here's what you asked for 👇"></textarea>
     <div style="text-align:right;color:var(--mut);font-size:12px"><span id="count">0</span>/1000</div>
+    <label>Links (up to 5 — they ride inside the DM, ManyChat multi-link style)</label>
+    <div id="links"></div>
+    <button type="button" class="btn ghost" style="margin-top:8px" onclick="addLinkRow()">+ Add a link</button>
     <label class="check"><input type="checkbox" id="f-enabled" checked> Active (on)</label>
     <div class="err" id="edErr"></div>
     <div class="foot">
@@ -170,9 +189,11 @@ function renderList(){
     <div class="card">
       <div class="grow">
         <h3>${esc(a.name)}</h3>
-        <span class="pill">${esc(a.platform)}</span><span class="pill">comment</span>
-        <span class="pill kw">"${esc(a.keyword)}"</span><span class="pill">${a.match}</span>
+        <span class="pill">${esc(a.platform)}</span><span class="pill">${{comment:'💬 comment',story_reply:'📸 story reply',dm:'✉️ DM'}[a.trigger]||a.trigger}</span>
+        ${a.keyword?`<span class="pill kw">"${esc(a.keyword)}"</span><span class="pill">${a.match}</span>`:'<span class="pill kw">any reply</span>'}
+        ${a.mediaId?`<span class="pill">one post only</span>`:''}
         <div class="reply">${esc(a.reply)}</div>
+        ${(a.links&&a.links.length)?`<div class="reply">${a.links.map(l=>`🔗 ${esc(l.label)}: ${esc(l.url)}`).join('<br>')}</div>`:''}
       </div>
       <label class="switch" title="On / off"><input type="checkbox" ${a.enabled?'checked':''} onchange="toggleItem('${a.id}', this.checked)"><span class="track"></span></label>
       <div class="actions">
@@ -186,21 +207,58 @@ function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 async function toggleItem(id, enabled){ await api('/api/automations/'+id,{method:'PUT',body:JSON.stringify({enabled})}); loadAll(); }
 async function delItem(id){ if(!confirm('Delete this automation?')) return; await api('/api/automations/'+id,{method:'DELETE'}); loadAll(); }
 
+function addLinkRow(label='', url=''){
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;margin-top:8px';
+  row.innerHTML = `<input type="text" placeholder="Button label, e.g. Get the guide" value="${esc(label)}" style="flex:1">
+    <input type="text" placeholder="https://…" value="${esc(url)}" style="flex:2">
+    <button type="button" class="btn danger" onclick="this.parentElement.remove()">✕</button>`;
+  $('links').appendChild(row);
+}
+function readLinks(){
+  return [...$('links').children].map(r => ({ label: r.children[0].value.trim(), url: r.children[1].value.trim() })).filter(l => l.url);
+}
+function triggerHint(){
+  const t = $('f-trigger').value;
+  $('kw-optional').classList.toggle('hidden', t!=='story_reply');
+  $('media-wrap').classList.toggle('hidden', t!=='comment');
+  $('f-trigger-hint').textContent = {
+    comment: 'Fires when a post comment matches. Set it up before you post and it covers your next post.',
+    story_reply: 'Fires when someone replies to your story. With no keyword, every reply gets the DM.',
+    dm: 'Fires when someone sends you a DM that matches the keyword.'
+  }[t];
+}
+function openTemplate(t){
+  openEditor();
+  const presets = {
+    comment: { name:'Next post — comment keyword → links', keyword:'app' },
+    story_reply: { name:'Story replies → links', keyword:'' },
+    dm: { name:'DM keyword → links', keyword:'guide' },
+  };
+  $('f-trigger').value = t;
+  $('f-name').value = presets[t].name;
+  $('f-keyword').value = presets[t].keyword;
+  triggerHint();
+}
 function openEditor(id){
   editingId = id || null;
   const a = items.find(x=>x.id===id);
   $('ed-title').textContent = a ? 'Edit Automation' : 'New Automation';
   $('f-name').value = a?.name || ''; $('f-platform').value = a?.platform || 'instagram';
+  $('f-trigger').value = a?.trigger || 'comment';
   $('f-match').value = a?.match || 'contains'; $('f-keyword').value = a?.keyword || '';
+  $('f-media').value = a?.mediaId || '';
   $('f-reply').value = a?.reply || ''; $('f-enabled').checked = a ? a.enabled : true;
+  $('links').innerHTML = ''; (a?.links||[]).forEach(l => addLinkRow(l.label, l.url));
   $('count').textContent = ($('f-reply').value||'').length; $('edErr').textContent='';
+  triggerHint();
   $('editor').showModal();
 }
 $('f-reply').addEventListener('input', e => $('count').textContent = e.target.value.length);
 
 async function saveEditor(){
-  const payload = { name:$('f-name').value, platform:$('f-platform').value, match:$('f-match').value,
-    keyword:$('f-keyword').value, reply:$('f-reply').value, enabled:$('f-enabled').checked };
+  const payload = { name:$('f-name').value, platform:$('f-platform').value, trigger:$('f-trigger').value, match:$('f-match').value,
+    keyword:$('f-keyword').value, mediaId:$('f-media').value, reply:$('f-reply').value, links:readLinks(), enabled:$('f-enabled').checked };
   try {
     if (editingId) await api('/api/automations/'+editingId,{method:'PUT',body:JSON.stringify(payload)});
     else await api('/api/automations',{method:'POST',body:JSON.stringify(payload)});
