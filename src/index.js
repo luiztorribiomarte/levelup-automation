@@ -9,7 +9,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { sendPrivateReply } = require('./meta');
+const { sendPrivateReply, sendDM } = require('./meta');
 
 const app = express();
 app.use(express.json());
@@ -21,19 +21,43 @@ const PORT = process.env.PORT || 3000;
 const TRIGGERS_PATH = path.join(__dirname, '..', 'triggers.json');
 
 // ---------- Automations store (persisted to triggers.json) ----------
+const TRIGGERS = ['comment', 'story_reply', 'dm'];
+
+function cleanLinks(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((l) => l && l.url)
+    .slice(0, 5)
+    .map((l) => ({
+      label: String(l.label || 'Link').slice(0, 40),
+      url: String(l.url).slice(0, 500),
+    }));
+}
+
 function migrate(raw) {
   // Old format: { keyword, reply } -> new automation object.
   return {
     id: raw.id || crypto.randomUUID(),
     name: raw.name || `Comment "${raw.keyword}" → DM`,
     platform: raw.platform || 'instagram',
-    trigger: raw.trigger || 'comment',
+    trigger: TRIGGERS.includes(raw.trigger) ? raw.trigger : 'comment',
     keyword: raw.keyword || '',
     match: raw.match || 'contains', // contains | exact | starts
     reply: raw.reply || '',
+    links: cleanLinks(raw.links),
+    mediaId: raw.mediaId || '', // comment trigger only: limit to one post (empty = all posts)
     enabled: raw.enabled !== false,
     createdAt: raw.createdAt || new Date().toISOString(),
   };
+}
+
+// The DM text a person receives: the message plus any labeled links.
+function composeMessage(a) {
+  let out = a.reply || '';
+  for (const l of a.links || []) {
+    out += `\n\n${l.label}: ${l.url}`;
+  }
+  return out.trim();
 }
 
 function loadAutomations() {
@@ -113,20 +137,28 @@ app.get('/api/automations', requireAuth, (_req, res) => res.json(automations));
 
 app.post('/api/automations', requireAuth, (req, res) => {
   const b = req.body || {};
-  if (!b.keyword || !b.reply) {
-    return res.status(400).json({ error: 'Keyword and DM reply are required.' });
+  const trigger = TRIGGERS.includes(b.trigger) ? b.trigger : 'comment';
+  // Story-reply automations may fire on ANY story reply (keyword optional).
+  if (trigger !== 'story_reply' && !b.keyword) {
+    return res.status(400).json({ error: 'A keyword is required for this trigger.' });
+  }
+  if (!b.reply && !(Array.isArray(b.links) && b.links.length)) {
+    return res.status(400).json({ error: 'Add a DM message or at least one link.' });
   }
   const a = migrate({
     name: String(b.name || '').slice(0, 80),
     platform: ['instagram', 'facebook', 'threads'].includes(b.platform) ? b.platform : 'instagram',
-    keyword: String(b.keyword).trim().slice(0, 60),
+    trigger,
+    keyword: String(b.keyword || '').trim().slice(0, 60),
     match: ['contains', 'exact', 'starts'].includes(b.match) ? b.match : 'contains',
-    reply: String(b.reply).slice(0, 1000),
+    reply: String(b.reply || '').slice(0, 1000),
+    links: b.links,
+    mediaId: String(b.mediaId || '').trim().slice(0, 60),
     enabled: b.enabled !== false,
   });
   automations.push(a);
   saveAutomations();
-  logActivity('automation_created', `"${a.keyword}" → DM (${a.platform})`);
+  logActivity('automation_created', `${a.trigger} "${a.keyword}" → DM (${a.platform})`);
   res.status(201).json(a);
 });
 
@@ -135,9 +167,12 @@ app.put('/api/automations/:id', requireAuth, (req, res) => {
   if (!a) return res.status(404).json({ error: 'Automation not found' });
   const b = req.body || {};
   if (b.name !== undefined) a.name = String(b.name).slice(0, 80);
+  if (b.trigger !== undefined && TRIGGERS.includes(b.trigger)) a.trigger = b.trigger;
   if (b.keyword !== undefined) a.keyword = String(b.keyword).trim().slice(0, 60);
   if (b.match !== undefined && ['contains', 'exact', 'starts'].includes(b.match)) a.match = b.match;
   if (b.reply !== undefined) a.reply = String(b.reply).slice(0, 1000);
+  if (b.links !== undefined) a.links = cleanLinks(b.links);
+  if (b.mediaId !== undefined) a.mediaId = String(b.mediaId).trim().slice(0, 60);
   if (b.enabled !== undefined) a.enabled = !!b.enabled;
   saveAutomations();
   logActivity('automation_updated', `"${a.keyword}" (enabled: ${a.enabled})`);
@@ -204,17 +239,67 @@ app.post('/webhook', (req, res) => {
 async function handleEvent(body) {
   if (!body || body.object !== 'instagram') return;
   for (const entry of body.entry || []) {
+    // --- Comment events (entry.changes) ---
     for (const change of entry.changes || []) {
       const value = change.value || {};
       if (change.field === 'comments' && value.id && value.text) {
         if (seen.has(value.id)) continue;
         seen.add(value.id);
         logActivity('comment', `"${String(value.text).slice(0, 80)}"`);
-        const hit = automations.find((a) => a.enabled && a.platform === 'instagram' && matches(a, value.text));
+        const hit = automations.find(
+          (a) =>
+            a.enabled &&
+            a.platform === 'instagram' &&
+            a.trigger === 'comment' &&
+            (!a.mediaId || a.mediaId === value.media_id || a.mediaId === (value.media && value.media.id)) &&
+            matches(a, value.text)
+        );
         if (hit) {
-          await sendPrivateReply(value.id, hit.reply);
+          await sendPrivateReply(value.id, composeMessage(hit));
           console.log(`DM sent for comment ${value.id} (keyword: "${hit.keyword}")`);
-          logActivity('dm_sent', `Keyword "${hit.keyword}" on comment ${value.id}`);
+          logActivity('dm_sent', `Comment trigger "${hit.keyword}" on comment ${value.id}`);
+        }
+      }
+    }
+
+    // --- Messaging events: DMs + story replies (entry.messaging) ---
+    for (const ev of entry.messaging || []) {
+      const msg = ev.message || {};
+      if (msg.is_echo) continue;
+      const mid = msg.mid || `${ev.sender && ev.sender.id}-${ev.timestamp}`;
+      if (seen.has(mid)) continue;
+      seen.add(mid);
+      const text = msg.text || '';
+      const senderId = ev.sender && ev.sender.id;
+      if (!senderId) continue;
+
+      const isStoryReply =
+        !!(msg.reply_to && msg.reply_to.story) ||
+        (Array.isArray(msg.attachments) && msg.attachments.some((x) => x.type === 'story_mention'));
+
+      if (isStoryReply) {
+        logActivity('story_reply', `from ${senderId}: "${String(text).slice(0, 60)}"`);
+        const hit = automations.find(
+          (a) =>
+            a.enabled &&
+            a.platform === 'instagram' &&
+            a.trigger === 'story_reply' &&
+            (!a.keyword || matches(a, text))
+        );
+        if (hit) {
+          await sendDM(senderId, composeMessage(hit));
+          console.log(`DM sent for story reply from ${senderId} (keyword: "${hit.keyword}")`);
+          logActivity('dm_sent', `Story-reply trigger "${hit.keyword || '(any)'}" to ${senderId}`);
+        }
+      } else if (text) {
+        logActivity('dm', `from ${senderId}: "${String(text).slice(0, 60)}"`);
+        const hit = automations.find(
+          (a) => a.enabled && a.platform === 'instagram' && a.trigger === 'dm' && matches(a, text)
+        );
+        if (hit) {
+          await sendDM(senderId, composeMessage(hit));
+          console.log(`DM sent for DM keyword from ${senderId} (keyword: "${hit.keyword}")`);
+          logActivity('dm_sent', `DM trigger "${hit.keyword}" to ${senderId}`);
         }
       }
     }
