@@ -21,8 +21,10 @@ async function sendPrivateReply(commentId, message) {
 }
 
 // Plain DM to an Instagram-scoped user id (needs the 24h window / prior contact).
+// An inbound DM or story reply opens that window, which is what the
+// DM-keyword and story-reply automations rely on.
 async function sendDM(igScopedUserId, message) {
-  return graph(`${igScopedUserId}/messages`, {
+  return graph(`me/messages`, {
     recipient: JSON.stringify({ id: igScopedUserId }),
     message: JSON.stringify({ text: message }),
   });
