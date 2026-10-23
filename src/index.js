@@ -9,7 +9,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { sendPrivateReply, sendDM } = require('./meta');
+const { sendPrivateReply, sendDM, sendCommentReply } = require('./meta');
 
 const app = express();
 app.use(express.json());
@@ -34,8 +34,17 @@ function cleanLinks(raw) {
     }));
 }
 
+function cleanPublicReplies(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s) => String(s || '').trim().slice(0, 300))
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 function migrate(raw) {
   // Old format: { keyword, reply } -> new automation object.
+  const createdAt = raw.createdAt || new Date().toISOString();
   return {
     id: raw.id || crypto.randomUUID(),
     name: raw.name || `Comment "${raw.keyword}" → DM`,
@@ -46,8 +55,13 @@ function migrate(raw) {
     reply: raw.reply || '',
     links: cleanLinks(raw.links),
     mediaId: raw.mediaId || '', // comment trigger only: limit to one post (empty = all posts)
+    // Easy Builder extras (all optional; empty = behaviour exactly as before):
+    openingText: raw.openingText || (raw.openingDm && raw.openingDm.text) || '', // first DM, sent before the link DM
+    openingButton: raw.openingButton || (raw.openingDm && raw.openingDm.buttonLabel) || '', // shown as a "👉 label" line (API is text-only)
+    publicReplies: cleanPublicReplies(raw.publicReplies), // comment trigger: up to 3 rotating public replies
     enabled: raw.enabled !== false,
-    createdAt: raw.createdAt || new Date().toISOString(),
+    createdAt,
+    updatedAt: raw.updatedAt || createdAt,
   };
 }
 
@@ -84,6 +98,42 @@ const activity = [];
 function logActivity(type, detail) {
   activity.unshift({ time: new Date().toISOString(), type, detail });
   if (activity.length > 100) activity.pop();
+}
+
+// ---------- Per-automation run/send counters (in-memory, session only) ----------
+const runStats = {};
+function bumpStats(id, field) {
+  if (!runStats[id]) runStats[id] = { runs: 0, sends: 0 };
+  runStats[id][field] += 1;
+}
+
+// Sends an automation's messages to one person through sendFn(text):
+// the optional opening DM first, then the reply + links DM. Every send is
+// isolated in its own try/catch — a failure is logged to Activity and never
+// blocks the next message or the webhook handler. With no openingText set,
+// this is exactly one send, as before.
+async function deliverMessages(a, sendFn, label) {
+  if (a.openingText) {
+    const opening = a.openingButton ? `${a.openingText}\n\n👉 ${a.openingButton}` : a.openingText;
+    try {
+      await sendFn(opening);
+      bumpStats(a.id, 'sends');
+      logActivity('dm_sent', `${label} — opening DM`);
+    } catch (e) {
+      console.error('opening DM failed:', e.message);
+      logActivity('dm_failed', `${label} — opening DM failed: ${String(e.message).slice(0, 120)}`);
+    }
+  }
+  try {
+    await sendFn(composeMessage(a));
+    bumpStats(a.id, 'sends');
+    logActivity('dm_sent', label);
+    return true;
+  } catch (e) {
+    console.error('DM send failed:', e.message);
+    logActivity('dm_failed', `${label} — failed: ${String(e.message).slice(0, 120)}`);
+    return false;
+  }
 }
 
 // ---------- Dashboard auth (single password, cookie session) ----------
@@ -133,14 +183,18 @@ app.post('/api/logout', (req, res) => {
 });
 
 // ---------- Automations API ----------
-app.get('/api/automations', requireAuth, (_req, res) => res.json(automations));
+app.get('/api/automations', requireAuth, (_req, res) => {
+  res.json(automations.map((a) => ({ ...a, stats: runStats[a.id] || { runs: 0, sends: 0 } })));
+});
 
 app.post('/api/automations', requireAuth, (req, res) => {
   const b = req.body || {};
   const trigger = TRIGGERS.includes(b.trigger) ? b.trigger : 'comment';
-  // Story-reply automations may fire on ANY story reply (keyword optional).
-  if (trigger !== 'story_reply' && !b.keyword) {
-    return res.status(400).json({ error: 'A keyword is required for this trigger.' });
+  // Story-reply and comment automations may fire on ANY word (keyword
+  // optional). DM automations still require a keyword — firing on every
+  // inbound DM would auto-reply to everything, including other bots.
+  if (trigger === 'dm' && !String(b.keyword || '').trim()) {
+    return res.status(400).json({ error: 'A keyword is required for DM automations.' });
   }
   if (!b.reply && !(Array.isArray(b.links) && b.links.length)) {
     return res.status(400).json({ error: 'Add a DM message or at least one link.' });
@@ -154,6 +208,9 @@ app.post('/api/automations', requireAuth, (req, res) => {
     reply: String(b.reply || '').slice(0, 1000),
     links: b.links,
     mediaId: String(b.mediaId || '').trim().slice(0, 60),
+    openingText: String(b.openingText || '').slice(0, 500),
+    openingButton: String(b.openingButton || '').trim().slice(0, 60),
+    publicReplies: b.publicReplies,
     enabled: b.enabled !== false,
   });
   automations.push(a);
@@ -173,7 +230,11 @@ app.put('/api/automations/:id', requireAuth, (req, res) => {
   if (b.reply !== undefined) a.reply = String(b.reply).slice(0, 1000);
   if (b.links !== undefined) a.links = cleanLinks(b.links);
   if (b.mediaId !== undefined) a.mediaId = String(b.mediaId).trim().slice(0, 60);
+  if (b.openingText !== undefined) a.openingText = String(b.openingText).slice(0, 500);
+  if (b.openingButton !== undefined) a.openingButton = String(b.openingButton).trim().slice(0, 60);
+  if (b.publicReplies !== undefined) a.publicReplies = cleanPublicReplies(b.publicReplies);
   if (b.enabled !== undefined) a.enabled = !!b.enabled;
+  a.updatedAt = new Date().toISOString();
   saveAutomations();
   logActivity('automation_updated', `"${a.keyword}" (enabled: ${a.enabled})`);
   res.json(a);
@@ -252,12 +313,25 @@ async function handleEvent(body) {
             a.platform === 'instagram' &&
             a.trigger === 'comment' &&
             (!a.mediaId || a.mediaId === value.media_id || a.mediaId === (value.media && value.media.id)) &&
-            matches(a, value.text)
+            (!a.keyword || matches(a, value.text)) // blank keyword = "any word"
         );
         if (hit) {
-          await sendPrivateReply(value.id, composeMessage(hit));
-          console.log(`DM sent for comment ${value.id} (keyword: "${hit.keyword}")`);
-          logActivity('dm_sent', `Comment trigger "${hit.keyword}" on comment ${value.id}`);
+          bumpStats(hit.id, 'runs');
+          const label = `Comment trigger "${hit.keyword}" on comment ${value.id}`;
+          // Optional public reply under their comment (one of up to 3,
+          // rotating). Isolated: a failure here never affects the DMs.
+          if (hit.publicReplies && hit.publicReplies.length) {
+            const text = hit.publicReplies[Math.floor(Math.random() * hit.publicReplies.length)];
+            try {
+              await sendCommentReply(value.id, text);
+              logActivity('public_reply', `${label} — public reply posted`);
+            } catch (e) {
+              console.error('public reply failed:', e.message);
+              logActivity('public_reply_failed', `${label} — public reply failed: ${String(e.message).slice(0, 120)}`);
+            }
+          }
+          const sent = await deliverMessages(hit, (text) => sendPrivateReply(value.id, text), label);
+          if (sent) console.log(`DM sent for comment ${value.id} (keyword: "${hit.keyword}")`);
         }
       }
     }
@@ -287,9 +361,10 @@ async function handleEvent(body) {
             (!a.keyword || matches(a, text))
         );
         if (hit) {
-          await sendDM(senderId, composeMessage(hit));
-          console.log(`DM sent for story reply from ${senderId} (keyword: "${hit.keyword}")`);
-          logActivity('dm_sent', `Story-reply trigger "${hit.keyword || '(any)'}" to ${senderId}`);
+          bumpStats(hit.id, 'runs');
+          const label = `Story-reply trigger "${hit.keyword || '(any)'}" to ${senderId}`;
+          const sent = await deliverMessages(hit, (text) => sendDM(senderId, text), label);
+          if (sent) console.log(`DM sent for story reply from ${senderId} (keyword: "${hit.keyword}")`);
         }
       } else if (text) {
         logActivity('dm', `from ${senderId}: "${String(text).slice(0, 60)}"`);
@@ -297,9 +372,10 @@ async function handleEvent(body) {
           (a) => a.enabled && a.platform === 'instagram' && a.trigger === 'dm' && matches(a, text)
         );
         if (hit) {
-          await sendDM(senderId, composeMessage(hit));
-          console.log(`DM sent for DM keyword from ${senderId} (keyword: "${hit.keyword}")`);
-          logActivity('dm_sent', `DM trigger "${hit.keyword}" to ${senderId}`);
+          bumpStats(hit.id, 'runs');
+          const label = `DM trigger "${hit.keyword}" to ${senderId}`;
+          const sent = await deliverMessages(hit, (text) => sendDM(senderId, text), label);
+          if (sent) console.log(`DM sent for DM keyword from ${senderId} (keyword: "${hit.keyword}")`);
         }
       }
     }
