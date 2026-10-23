@@ -476,7 +476,7 @@ async function saveEditor(){
     if (editingId) await api('/api/automations/'+editingId,{method:'PUT',body:JSON.stringify(payload)});
     else await api('/api/automations',{method:'POST',body:JSON.stringify(payload)});
     $('editor').close(); loadAll();
-  } catch(e){ $('edErr').textContent = e.message; }
+  } catch(e){ $('edErr').textContent = e.message==='auth' ? 'Session expired — close this editor, log in again, then save.' : e.message; }
 }
 
 /* ---------- Phone preview ---------- */
