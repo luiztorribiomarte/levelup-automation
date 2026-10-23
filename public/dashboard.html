@@ -216,16 +216,16 @@
       <label class="lbl">Platform</label>
       <select id="f-platform">
         <option value="instagram">Instagram</option>
-        <option value="facebook" disabled>Facebook — coming soon</option>
-        <option value="threads" disabled>Threads — paused</option>
+        <option value="facebook">Facebook</option>
+        <option value="threads">Threads</option>
       </select>
 
       <div class="sec" style="margin-top:16px">
         <h3>1 · When someone…</h3>
         <div class="opts" id="trig-opts">
-          <label class="opt"><input type="radio" name="trig" value="comment"><span>💬 Comments on a post<small>Fires when a post comment matches — set it up before you post and it covers your next post.</small></span></label>
-          <label class="opt"><input type="radio" name="trig" value="story_reply"><span>📸 Replies to your story<small>Fires when someone replies to one of your stories.</small></span></label>
-          <label class="opt"><input type="radio" name="trig" value="dm"><span>✉️ DMs you<small>Fires when someone sends you a direct message that matches.</small></span></label>
+          <label class="opt" id="trig-opt-comment"><input type="radio" name="trig" value="comment"><span><span id="trig-comment-title">💬 Comments on a post</span><small>Fires when a post comment matches — set it up before you post and it covers your next post.</small></span></label>
+          <label class="opt" id="trig-opt-story"><input type="radio" name="trig" value="story_reply"><span>📸 Replies to your story<small>Fires when someone replies to one of your stories.</small></span></label>
+          <label class="opt" id="trig-opt-dm"><input type="radio" name="trig" value="dm"><span>✉️ DMs you<small>Fires when someone sends you a direct message that matches.</small></span></label>
         </div>
         <div id="media-wrap">
           <label class="lbl">Limit to one specific post? (optional)</label>
@@ -388,7 +388,8 @@ const TRIG_SENT = { comment:'User comments on a post', story_reply:'User replies
 const MATCH_W = { contains:'contains', exact:'is exactly', starts:'starts with' };
 function fmtDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
 function cardHTML(a){
-  const trig = a.trigger==='comment' && a.mediaId ? 'User comments on a specific post' : TRIG_SENT[a.trigger] || a.trigger;
+  let trig = a.trigger==='comment' && a.mediaId ? 'User comments on a specific post' : TRIG_SENT[a.trigger] || a.trigger;
+  if (a.platform==='threads' && a.trigger==='comment') trig = a.mediaId ? 'User replies on a specific post' : 'User replies / mentions you';
   const kw = a.keyword
     ? `<span class="conn">and it</span><span class="wchip">${MATCH_W[a.match]||a.match}</span><span class="wchip kw">“${esc(a.keyword)}”</span>`
     : `<span class="conn">and it includes</span><span class="wchip kw">any word</span>`;
@@ -436,10 +437,19 @@ function readLinks(){
   return [...$('links').children].map(r => ({ label: r.children[0].value.trim(), url: r.children[1].value.trim() })).filter(l => l.url);
 }
 function syncEditor(){
+  // Platform decides which triggers exist: story replies are Instagram-only,
+  // Threads has no DMs (its "comment" trigger is a reply / mention), Facebook
+  // gets comments + Messenger DMs.
+  const plat = $('f-platform').value;
+  $('trig-opt-story').classList.toggle('hidden', plat!=='instagram');
+  $('trig-opt-dm').classList.toggle('hidden', plat==='threads');
+  $('trig-comment-title').textContent = plat==='threads' ? '💬 Reply / mention' : '💬 Comments on a post';
+  if (plat!=='instagram' && curTrigger()==='story_reply') setTrigger('comment');
+  if (plat==='threads' && curTrigger()==='dm') setTrigger('comment');
   const t = curTrigger();
   document.querySelectorAll('#trig-opts .opt').forEach(o => o.classList.toggle('sel', o.querySelector('input').checked));
   $('media-wrap').classList.toggle('hidden', t!=='comment');
-  $('pub-wrap').classList.toggle('hidden', t!=='comment');
+  $('pub-wrap').classList.toggle('hidden', t!=='comment' || plat==='threads');
   // "Any word" is not offered for DM automations (would reply to every DM).
   const anyRadio = document.querySelector('input[name="kwmode"][value="any"]');
   if (t==='dm' && curKwMode()==='any') document.querySelector('input[name="kwmode"][value="specific"]').checked = true;
