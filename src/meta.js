@@ -20,6 +20,11 @@ async function sendPrivateReply(commentId, message) {
   return graph(`${commentId}/private_replies`, { message });
 }
 
+// Public reply posted under an Instagram comment (shows in the comment thread).
+async function sendCommentReply(commentId, message) {
+  return graph(`${commentId}/replies`, { message });
+}
+
 // Plain DM to an Instagram-scoped user id (needs the 24h window / prior contact).
 // An inbound DM or story reply opens that window, which is what the
 // DM-keyword and story-reply automations rely on.
@@ -30,4 +35,4 @@ async function sendDM(igScopedUserId, message) {
   });
 }
 
-module.exports = { sendPrivateReply, sendDM };
+module.exports = { sendPrivateReply, sendDM, sendCommentReply };
