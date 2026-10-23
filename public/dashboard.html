@@ -5,53 +5,141 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Level Up Automation — Dashboard</title>
 <style>
-  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222c;--line:#262b36;--txt:#eef1f6;--mut:#8b94a7;--acc:#e2b659;--grn:#4a7c59;--red:#c0392b;--rad:14px}
-  *{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt)}
-  a{color:var(--acc)}
+  :root{
+    --bg:#F4F4F7; --card:#fff; --ink:#0B1526; --body:#3C4657; --mut:#7A8699;
+    --line:#E6E8EF; --blue:#2F6BFF; --blue-d:#1F55D6; --grn:#00D563; --red:#FF4D4F;
+    --slate:#8A94A6; --slate-bg:#EEF0F4; --chip:#F1F3F9;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 10px 28px rgba(16,24,40,.05);
+    --rad:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--body)}
+  h1,h2,h3{color:var(--ink)}
+  a{color:var(--blue)}
+  button{font-family:inherit}
   .layout{display:flex;min-height:100vh}
-  .side{width:220px;background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;flex-shrink:0}
-  .logo{font-weight:800;font-size:18px;letter-spacing:.5px}.logo span{color:var(--acc)}
-  .side nav{margin-top:28px;display:flex;flex-direction:column;gap:6px}
-  .side nav button{background:none;border:0;color:var(--mut);text-align:left;padding:10px 12px;border-radius:10px;font-size:15px;cursor:pointer}
-  .side nav button.active{background:var(--panel2);color:var(--txt)}
-  .side .foot{margin-top:40px;font-size:12px;color:var(--mut);line-height:1.5}
-  .main{flex:1;padding:26px 30px;max-width:980px}
-  h1{font-size:24px;margin:0}
-  .sub{color:var(--mut);margin:6px 0 20px}
-  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:14px 18px;min-width:130px}
-  .stat b{font-size:22px;display:block}.stat small{color:var(--mut)}
-  .rowhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 14px}
-  .btn{background:var(--acc);color:#111;border:0;padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px}
-  .btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
-  .btn.danger{background:none;color:#ff8a80;border:1px solid var(--line)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:16px 18px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start}
-  .card .grow{flex:1;min-width:0}
-  .card h3{margin:0 0 6px;font-size:16px}
-  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);margin-right:6px}
-  .pill.kw{color:var(--acc);font-weight:700}
-  .reply{color:var(--mut);font-size:14px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
-  .switch{position:relative;width:46px;height:26px;flex-shrink:0}
+
+  /* ---------- Sidebar ---------- */
+  .side{width:232px;background:var(--card);border-right:1px solid var(--line);padding:22px 14px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .logo{font-weight:800;font-size:17px;color:var(--ink);letter-spacing:.2px;padding:0 8px}
+  .logo span{color:var(--blue)}
+  .side nav{margin-top:26px;display:flex;flex-direction:column;gap:4px}
+  .side nav button{background:none;border:0;color:var(--body);text-align:left;padding:10px 12px;border-radius:10px;font-size:15px;cursor:pointer;display:flex;gap:10px;align-items:center}
+  .side nav button:hover{background:var(--chip)}
+  .side nav button.active{background:#EAF0FF;color:var(--blue);font-weight:600}
+  .side .foot{margin-top:auto;font-size:12px;color:var(--mut);line-height:1.55;padding:0 8px}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;padding:28px 32px;max-width:1120px;margin:0 auto;width:100%}
+  h1{font-size:26px;margin:0;font-weight:800}
+  .sub{color:var(--mut);margin:6px 0 22px;font-size:15px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+  .stat{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);padding:16px 18px}
+  .stat b{font-size:24px;display:block;color:var(--ink)}
+  .stat small{color:var(--mut);font-size:13px}
+
+  .btn{background:var(--blue);color:#fff;border:0;padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
+  .btn:hover{background:var(--blue-d)}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .btn.ghost:hover{background:var(--chip)}
+  .btn.danger{background:var(--card);color:var(--red);border:1px solid var(--line)}
+  .btn.danger:hover{background:#FFF1F1}
+  .btn.sm{padding:7px 13px;font-size:13px}
+
+  /* ---------- Template cards ---------- */
+  .tpls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:26px}
+  .tpl{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);padding:18px;text-align:left;border:1px solid transparent;cursor:pointer;width:100%}
+  .tpl:hover{border-color:#CFE0FF}
+  .tpl .ic{font-size:24px}
+  .tpl h3{margin:8px 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .tpl p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.45}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:99px;background:#FFF3E0;color:#B26A00}
+  .strip{background:linear-gradient(90deg,#EAF0FF,#F0FFF6);border-radius:var(--rad);padding:16px 18px;margin-bottom:22px;color:var(--ink);font-size:14.5px}
+  .strip b{font-weight:700}
+
+  /* ---------- Automation cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:10px}
+  .card .top{display:flex;align-items:center;gap:8px}
+  .card h3{margin:0;font-size:16.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .live{font-size:11px;font-weight:800;letter-spacing:.6px;padding:4px 9px;border-radius:99px;background:#FFEDED;color:var(--red);display:inline-flex;align-items:center;gap:5px}
+  .live i{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block}
+  .paused{font-size:11px;font-weight:800;letter-spacing:.6px;padding:4px 9px;border-radius:99px;background:var(--slate-bg);color:var(--slate)}
+  .plat{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:99px;background:var(--chip);color:var(--body)}
+  .sentence{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+  .wchip{background:var(--chip);border-radius:8px;padding:4px 9px;color:var(--ink);font-weight:500}
+  .wchip.kw{background:#EAF0FF;color:var(--blue);font-weight:700}
+  .conn{color:var(--mut);font-size:12.5px}
+  .meta{color:var(--mut);font-size:12.5px}
+  .prev{color:var(--body);font-size:13.5px;background:#FAFAFC;border:1px solid var(--line);border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;max-height:96px;overflow:hidden}
+  .card .actions{display:flex;gap:8px;margin-top:auto}
+  .switch{position:relative;width:44px;height:25px;flex-shrink:0}
   .switch input{opacity:0;width:0;height:0}
-  .track{position:absolute;inset:0;background:#333;border-radius:99px;transition:.2s;cursor:pointer}
-  .track:before{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+  .track{position:absolute;inset:0;background:#D5DAE3;border-radius:99px;transition:.2s;cursor:pointer}
+  .track:before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .switch input:checked + .track{background:var(--grn)}
-  .switch input:checked + .track:before{transform:translateX(20px)}
-  .card .actions{display:flex;gap:8px;flex-shrink:0}
-  .empty{color:var(--mut);background:var(--panel);border:1px dashed var(--line);border-radius:var(--rad);padding:28px;text-align:center}
-  dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:16px;width:min(560px,92vw);padding:0}
-  dialog::backdrop{background:rgba(0,0,0,.6)}
-  .dlg{padding:22px}
-  label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px}
-  input[type=text],textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px}
-  textarea{min-height:90px;resize:vertical}
-  .dlg .foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
-  .check{display:flex;gap:8px;align-items:center;color:var(--txt);font-size:14px}
-  .check input{width:auto}
-  #login{max-width:380px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px}
-  .err{color:#ff8a80;font-size:14px;min-height:18px}
-  .act{display:flex;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px}
-  .act time{color:var(--mut);flex-shrink:0;font-size:12px;padding-top:2px}
+  .switch input:checked + .track:before{transform:translateX(19px)}
+  .empty{color:var(--mut);background:var(--card);border:1.5px dashed #D5DAE3;border-radius:var(--rad);padding:30px;text-align:center;font-size:14.5px}
+  .rowhead{display:flex;justify-content:space-between;align-items:center;margin:4px 0 14px}
+
+  /* ---------- Activity ---------- */
+  .act{display:flex;gap:12px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:8px;font-size:14px;align-items:baseline}
+  .act time{color:var(--mut);flex-shrink:0;font-size:12px}
+  .act .dot{width:8px;height:8px;border-radius:50%;background:var(--slate);flex-shrink:0;align-self:center}
+  .act.ok .dot{background:var(--grn)} .act.bad .dot{background:var(--red)} .act.info .dot{background:var(--blue)}
+
+  /* ---------- Editor ---------- */
+  dialog{background:var(--card);color:var(--body);border:0;border-radius:20px;width:min(1080px,96vw);padding:0;box-shadow:0 24px 70px rgba(11,21,38,.35);max-height:94vh}
+  dialog::backdrop{background:rgba(11,21,38,.45)}
+  .ed-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
+  .ed-head h2{margin:0;font-size:20px}
+  .ed-body{display:grid;grid-template-columns:1fr 330px;gap:26px;padding:18px 24px 24px;overflow:auto}
+  @media(max-width:860px){.ed-body{grid-template-columns:1fr}}
+  .sec{background:#FAFAFC;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+  .sec h3{margin:0 0 4px;font-size:16px}
+  .sec .hint{font-size:12.5px;color:var(--mut);line-height:1.5;margin-top:8px}
+  label.lbl{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px;font-weight:600}
+  input[type=text],textarea,select{width:100%;background:#fff;border:1px solid #D5DAE3;color:var(--ink);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit}
+  input[type=text]:focus,textarea:focus,select:focus{outline:2px solid #B9CFFF;border-color:var(--blue)}
+  textarea{min-height:74px;resize:vertical}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .opt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;font-size:14.5px;color:var(--ink)}
+  .opt:hover{border-color:#B9CFFF}
+  .opt input{margin-top:3px;accent-color:var(--blue)}
+  .opt small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+  .opt.sel{border-color:var(--blue);background:#F5F8FF}
+  .inline2{display:grid;grid-template-columns:1fr 160px;gap:10px}
+  .ed-foot{display:flex;justify-content:flex-end;gap:10px;padding:0 24px 22px;align-items:center}
+  .ed-foot .grow{flex:1}
+  .err{color:var(--red);font-size:14px;min-height:18px}
+  .check{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;font-weight:600}
+  .count{color:var(--mut);font-size:12px;text-align:right}
+
+  /* ---------- Phone preview ---------- */
+  .pv-wrap{position:sticky;top:0}
+  .pv-title{font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin:2px 0 10px;text-align:center}
+  .phone{background:#fff;border:2.5px solid #0B1526;border-radius:38px;padding:12px 10px 16px;box-shadow:0 14px 34px rgba(11,21,38,.18)}
+  .notch{width:96px;height:20px;background:#0B1526;border-radius:99px;margin:0 auto 10px}
+  .pv-tabs{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+  .pv-tabs button{border:1px solid var(--line);background:var(--chip);color:var(--body);border-radius:99px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-weight:600}
+  .pv-tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .pv-pane{font-size:13px;min-height:300px}
+  .ig-head{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink)}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(45deg,#FEDA75,#FA7E1E,#D62976,#962FBF);flex-shrink:0}
+  .ig-img{height:150px;border-radius:12px;background:linear-gradient(135deg,#232a3a,#3d4b6b);margin:10px 0;display:flex;align-items:center;justify-content:center;font-size:34px}
+  .ig-cap{color:var(--body);line-height:1.45}
+  .cmt{display:flex;gap:8px;margin-top:10px}
+  .cmt .avatar{width:24px;height:24px;background:linear-gradient(45deg,#8EC5FC,#E0C3FC)}
+  .cmt b{color:var(--ink)}
+  .cmt .who{font-size:11.5px;color:var(--mut)}
+  .bubble{background:#F1F3F9;border-radius:16px;border-bottom-left-radius:5px;padding:9px 12px;margin:8px 0;line-height:1.45;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .bubble.none{background:#fff;border:1.5px dashed #D5DAE3;color:var(--mut);font-style:italic}
+  .pill-btn{display:block;text-align:center;background:var(--blue);color:#fff;font-weight:700;border-radius:10px;padding:8px;margin:-2px 0 10px;font-size:13px}
+  .dm-note{font-size:11.5px;color:var(--mut);text-align:center;margin:8px 0}
+
+  /* ---------- Login ---------- */
+  #login{max-width:400px;margin:12vh auto;background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:30px}
+  #login input[type=password]{width:100%;border:1px solid #D5DAE3;border-radius:10px;padding:11px 12px;font-size:14px}
   .hidden{display:none!important}
   @media(max-width:700px){.side{display:none}.main{padding:18px}}
 </style>
@@ -59,10 +147,10 @@
 <body>
 
 <div id="login" class="hidden">
-  <div class="logo">LEVEL UP <span>AUTOMATION</span></div>
+  <div class="logo" style="font-size:19px">LEVEL UP <span>AUTOMATION</span></div>
   <p class="sub">Your personal ManyChat-style dashboard. Log in to manage automations.</p>
-  <label>Dashboard password</label>
-  <input type="password" id="pw" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px" onkeydown="if(event.key==='Enter')doLogin()">
+  <label class="lbl">Dashboard password</label>
+  <input type="password" id="pw" onkeydown="if(event.key==='Enter')doLogin()">
   <div class="err" id="loginErr"></div>
   <button class="btn" style="width:100%;margin-top:8px" onclick="doLogin()">Log in</button>
 </div>
@@ -71,7 +159,8 @@
   <aside class="side">
     <div class="logo">LEVEL UP <span>AUTOMATION</span></div>
     <nav>
-      <button id="nav-auto" class="active" onclick="showTab('auto')">⚡ Automations</button>
+      <button id="nav-home" class="active" onclick="showTab('home')">🏠 Home</button>
+      <button id="nav-auto" onclick="showTab('auto')">⚡ Automations</button>
       <button id="nav-act" onclick="showTab('act')">🕘 Activity</button>
       <button onclick="doLogout()">Log out</button>
     </nav>
@@ -79,24 +168,34 @@
   </aside>
 
   <main class="main">
-    <section id="tab-auto">
-      <h1>Automations</h1>
+    <!-- HOME -->
+    <section id="tab-home">
+      <h1>Home</h1>
       <p class="sub">Someone comments, replies to your story, or DMs your keyword → they automatically get your DM with your links. Changes go live instantly.</p>
       <div class="stats">
         <div class="stat"><b id="st-total">–</b><small>Automations</small></div>
         <div class="stat"><b id="st-active">–</b><small>Active</small></div>
         <div class="stat"><b id="st-dms">–</b><small>DMs sent (session)</small></div>
+        <div class="stat"><b id="st-events">–</b><small>Activity events</small></div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-        <button class="btn ghost" onclick="openTemplate('comment')">📣 Template: Next post comments</button>
-        <button class="btn ghost" onclick="openTemplate('story_reply')">📸 Template: Story replies</button>
-        <button class="btn ghost" onclick="openTemplate('dm')">💬 Template: DM keyword</button>
-      </div>
-      <div class="rowhead"><h2 style="margin:0;font-size:18px">Your automations</h2>
+      <div class="strip">👋 <b>Start here:</b> pick a template below, set your keyword and links, flip it live. Build it <b>before</b> you post so it catches your next post.</div>
+      <div class="tpls" id="tpls-home"></div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your automations</h2>
         <button class="btn" onclick="openEditor()">+ New Automation</button></div>
-      <div id="list"></div>
+      <div class="grid" id="list-home"></div>
     </section>
 
+    <!-- AUTOMATIONS -->
+    <section id="tab-auto" class="hidden">
+      <h1>Automations</h1>
+      <p class="sub">Every rule below runs itself. Toggle one off to pause it — nothing gets deleted.</p>
+      <div class="tpls" id="tpls-auto"></div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your automations</h2>
+        <button class="btn" onclick="openEditor()">+ New Automation</button></div>
+      <div class="grid" id="list-auto"></div>
+    </section>
+
+    <!-- ACTIVITY -->
     <section id="tab-act" class="hidden">
       <h1>Activity</h1>
       <p class="sub">Recent webhook events, matches and DMs. Newest first.</p>
@@ -106,53 +205,122 @@
 </div>
 
 <dialog id="editor">
-  <div class="dlg">
-    <h2 style="margin:0" id="ed-title">New Automation</h2>
-    <label>Name (just for you)</label>
-    <input type="text" id="f-name" placeholder="e.g. APP keyword — waitlist DM">
-    <label>Platform</label>
-    <select id="f-platform">
-      <option value="instagram">Instagram — comments</option>
-      <option value="facebook" disabled>Facebook — coming soon</option>
-      <option value="threads" disabled>Threads — paused</option>
-    </select>
-    <label>Trigger — what starts this automation?</label>
-    <select id="f-trigger" onchange="triggerHint()">
-      <option value="comment">💬 Someone comments on a post</option>
-      <option value="story_reply">📸 Someone replies to my story</option>
-      <option value="dm">✉️ Someone DMs me</option>
-    </select>
-    <div id="f-trigger-hint" style="font-size:12px;color:var(--mut);margin-top:6px"></div>
-    <label>When it…</label>
-    <select id="f-match">
-      <option value="contains">contains the keyword</option>
-      <option value="exact">is exactly the keyword</option>
-      <option value="starts">starts with the keyword</option>
-    </select>
-    <label>Keyword <span id="kw-optional" class="hidden">(optional for story replies — blank fires on any reply)</span></label>
-    <input type="text" id="f-keyword" placeholder="e.g. app">
-    <div id="media-wrap">
-      <label>Limit to one specific post? (optional — paste its Media ID, blank = all posts)</label>
-      <input type="text" id="f-media" placeholder="blank = every post">
+  <div class="ed-head">
+    <h2 id="ed-title">New Automation</h2>
+    <button class="btn ghost sm" onclick="document.getElementById('editor').close()">✕</button>
+  </div>
+  <div class="ed-body">
+    <div id="ed-form">
+      <label class="lbl" style="margin-top:0">Name (just for you)</label>
+      <input type="text" id="f-name" placeholder="e.g. APP keyword — waitlist DM">
+      <label class="lbl">Platform</label>
+      <select id="f-platform">
+        <option value="instagram">Instagram</option>
+        <option value="facebook" disabled>Facebook — coming soon</option>
+        <option value="threads" disabled>Threads — paused</option>
+      </select>
+
+      <div class="sec" style="margin-top:16px">
+        <h3>1 · When someone…</h3>
+        <div class="opts" id="trig-opts">
+          <label class="opt"><input type="radio" name="trig" value="comment"><span>💬 Comments on a post<small>Fires when a post comment matches — set it up before you post and it covers your next post.</small></span></label>
+          <label class="opt"><input type="radio" name="trig" value="story_reply"><span>📸 Replies to your story<small>Fires when someone replies to one of your stories.</small></span></label>
+          <label class="opt"><input type="radio" name="trig" value="dm"><span>✉️ DMs you<small>Fires when someone sends you a direct message that matches.</small></span></label>
+        </div>
+        <div id="media-wrap">
+          <label class="lbl">Limit to one specific post? (optional)</label>
+          <input type="text" id="f-media" placeholder="Paste a Media ID — blank = every post, including the next one">
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>2 · And it includes…</h3>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="kwmode" value="specific"><span>A specific word<small>Only fires when the word shows up.</small></span></label>
+          <label class="opt"><input type="radio" name="kwmode" value="any"><span>Any word<small id="any-note">Fires no matter what they write.</small></span></label>
+        </div>
+        <div id="kw-fields">
+          <div class="inline2">
+            <div><label class="lbl">Keyword</label><input type="text" id="f-keyword" placeholder="e.g. app"></div>
+            <div><label class="lbl">Match</label>
+              <select id="f-match">
+                <option value="contains">contains</option>
+                <option value="exact">is exactly</option>
+                <option value="starts">starts with</option>
+              </select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>3 · They will get…</h3>
+        <label class="lbl" style="margin-top:8px">Opening DM (optional)</label>
+        <textarea id="f-opening" maxlength="500" placeholder="Hey! Thanks for commenting 🙏 Tap below and I'll send your links over."></textarea>
+        <label class="lbl">Button label (optional)</label>
+        <input type="text" id="f-button" maxlength="60" placeholder="e.g. Send me the links">
+        <p class="hint">The opening DM is sent first, on its own. Instagram's private-reply API is text-only, so the button rides inside the message as a “👉 label” line — the link DM follows right after. Leave it blank and they just get the link DM, like before.</p>
+        <div id="pub-wrap">
+          <label class="lbl">Public comment replies (optional, up to 3 — they rotate)</label>
+          <input type="text" class="pub-in" maxlength="300" placeholder="Just sent you a DM 📩 check your inbox!" style="margin-bottom:8px">
+          <input type="text" class="pub-in" maxlength="300" placeholder="DM sent ✅ go grab it" style="margin-bottom:8px">
+          <input type="text" class="pub-in" maxlength="300" placeholder="Check your DMs 👀">
+          <p class="hint">Posted publicly under their comment so everyone watching sees the social proof. A send failure here never blocks the DMs.</p>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>4 · And then, they will get…</h3>
+        <label class="lbl" style="margin-top:8px">The DM with your links</label>
+        <textarea id="f-reply" maxlength="1000" placeholder="Here's what you asked for 👇"></textarea>
+        <div class="count"><span id="count">0</span>/1000</div>
+        <label class="lbl">Links (up to 5 — they ride inside the DM, ManyChat multi-link style)</label>
+        <div id="links"></div>
+        <button type="button" class="btn ghost sm" style="margin-top:8px" onclick="addLinkRow()">+ Add a link</button>
+      </div>
     </div>
-    <label>Send this DM</label>
-    <textarea id="f-reply" maxlength="1000" placeholder="Here's what you asked for 👇"></textarea>
-    <div style="text-align:right;color:var(--mut);font-size:12px"><span id="count">0</span>/1000</div>
-    <label>Links (up to 5 — they ride inside the DM, ManyChat multi-link style)</label>
-    <div id="links"></div>
-    <button type="button" class="btn ghost" style="margin-top:8px" onclick="addLinkRow()">+ Add a link</button>
-    <label class="check"><input type="checkbox" id="f-enabled" checked> Active (on)</label>
-    <div class="err" id="edErr"></div>
-    <div class="foot">
-      <button class="btn ghost" onclick="document.getElementById('editor').close()">Cancel</button>
-      <button class="btn" onclick="saveEditor()">Save automation</button>
+
+    <div class="pv-wrap">
+      <div class="pv-title">Preview — what they see</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="pv-tabs">
+          <button data-pv="post" class="active" onclick="pvTab('post')">Post</button>
+          <button data-pv="comments" onclick="pvTab('comments')">Comments</button>
+          <button data-pv="dm" onclick="pvTab('dm')">DM</button>
+        </div>
+        <div class="pv-pane" id="pv-post">
+          <div class="ig-head"><span class="avatar"></span> projectlevelup1</div>
+          <div class="ig-img">🏔️</div>
+          <div class="ig-cap"><b style="color:var(--ink)">projectlevelup1</b> Day 23 of the Winter Arc. No zero days. ❄️</div>
+          <div class="cmt"><span class="avatar"></span><div><b>follower</b> <span id="pv-sample">app please!! 🙏</span><div class="who">2m · Reply</div></div></div>
+        </div>
+        <div class="pv-pane hidden" id="pv-comments">
+          <div class="cmt"><span class="avatar"></span><div><b>follower</b> <span id="pv-sample2">app please!! 🙏</span><div class="who">2m</div></div></div>
+          <div class="cmt" style="margin-left:32px"><span class="avatar"></span><div><b>projectlevelup1</b> <span id="pv-pub">…</span><div class="who">now · rotates through your replies</div></div></div>
+        </div>
+        <div class="pv-pane hidden" id="pv-dm">
+          <div class="ig-head" style="justify-content:center">projectlevelup1</div>
+          <div class="dm-note">Instagram DM</div>
+          <div id="pv-open-wrap"></div>
+          <div id="pv-main"></div>
+        </div>
+      </div>
+      <p class="hint" style="text-align:center;color:var(--mut);font-size:12.5px;margin-top:10px">Live preview from the form — updates as you type.</p>
     </div>
+  </div>
+  <div class="ed-foot">
+    <label class="check"><span class="switch"><input type="checkbox" id="f-enabled" checked><span class="track"></span></span> Live</label>
+    <span class="grow"></span>
+    <span class="err" id="edErr"></span>
+    <button class="btn ghost" onclick="document.getElementById('editor').close()">Cancel</button>
+    <button class="btn" onclick="saveEditor()">Save automation</button>
   </div>
 </dialog>
 
 <script>
-let items = [], editingId = null;
+let items = [], editingId = null, actCount = 0;
 const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 async function api(path, opts={}) {
   const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
@@ -175,90 +343,135 @@ async function doLogin(){
 }
 async function doLogout(){ await fetch('/api/logout',{method:'POST'}).catch(()=>{}); showLogin(); }
 
+/* ---------- Templates ---------- */
+const TEMPLATES = [
+  { key:'comment', icon:'💬', title:'Auto-DM links from comments', badge:'POPULAR', blurb:'Someone comments your keyword on a post → they instantly get a DM with your links.',
+    preset:{ name:'Auto-DM links from comments', keyword:'app', match:'contains' } },
+  { key:'story_reply', icon:'📸', title:'Generate leads from stories', badge:'', blurb:'Someone replies to your story → they get your lead magnet DM automatically.',
+    preset:{ name:'Generate leads from stories', keyword:'', match:'contains' } },
+  { key:'dm', icon:'✉️', title:'Respond to all your DMs', badge:'', blurb:'Someone DMs you the keyword → your links land back in seconds, even while you sleep.',
+    preset:{ name:'DM keyword → links', keyword:'guide', match:'contains' } },
+];
+function renderTemplates(){
+  const html = TEMPLATES.map(t => `
+    <button class="tpl" onclick="openTemplate('${t.key}')">
+      <div class="ic">${t.icon}</div>
+      <h3>${esc(t.title)} ${t.badge?`<span class="badge">${t.badge}</span>`:''}</h3>
+      <p>${esc(t.blurb)}</p>
+    </button>`).join('');
+  $('tpls-home').innerHTML = html; $('tpls-auto').innerHTML = html;
+}
+function openTemplate(key){
+  const t = TEMPLATES.find(x=>x.key===key);
+  openEditor();
+  setTrigger(key);
+  $('f-name').value = t.preset.name;
+  $('f-keyword').value = t.preset.keyword;
+  $('f-match').value = t.preset.match;
+  document.querySelector('input[name="kwmode"][value="specific"]').checked = true;
+  syncEditor();
+}
+
+/* ---------- List ---------- */
 async function loadAll(){
   try {
     items = await api('/api/automations');
     const s = await api('/api/status');
-    $('st-total').textContent = s.automations; $('st-active').textContent = s.active; $('st-dms').textContent = s.dmsSent;
-    renderList();
-  } catch(e){ if(e.message!=='auth') $('list').innerHTML = '<div class="empty">'+e.message+'</div>'; }
+    const acts = await api('/api/activity').catch(()=>[]);
+    actCount = acts.length;
+    $('st-total').textContent = s.automations; $('st-active').textContent = s.active;
+    $('st-dms').textContent = s.dmsSent; $('st-events').textContent = actCount;
+    renderGrids();
+  } catch(e){ if(e.message!=='auth') { const h='<div class="empty">'+esc(e.message)+'</div>'; $('list-home').innerHTML=h; $('list-auto').innerHTML=h; } }
 }
-function renderList(){
-  if (!items.length){ $('list').innerHTML = '<div class="empty">No automations yet. Hit <b>+ New Automation</b> to create your first keyword → DM rule.</div>'; return; }
-  $('list').innerHTML = items.map(a => `
-    <div class="card">
-      <div class="grow">
-        <h3>${esc(a.name)}</h3>
-        <span class="pill">${esc(a.platform)}</span><span class="pill">${{comment:'💬 comment',story_reply:'📸 story reply',dm:'✉️ DM'}[a.trigger]||a.trigger}</span>
-        ${a.keyword?`<span class="pill kw">"${esc(a.keyword)}"</span><span class="pill">${a.match}</span>`:'<span class="pill kw">any reply</span>'}
-        ${a.mediaId?`<span class="pill">one post only</span>`:''}
-        <div class="reply">${esc(a.reply)}</div>
-        ${(a.links&&a.links.length)?`<div class="reply">${a.links.map(l=>`🔗 ${esc(l.label)}: ${esc(l.url)}`).join('<br>')}</div>`:''}
-      </div>
+const TRIG_SENT = { comment:'User comments on a post', story_reply:'User replies to your story', dm:'User DMs you' };
+const MATCH_W = { contains:'contains', exact:'is exactly', starts:'starts with' };
+function fmtDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+function cardHTML(a){
+  const trig = a.trigger==='comment' && a.mediaId ? 'User comments on a specific post' : TRIG_SENT[a.trigger] || a.trigger;
+  const kw = a.keyword
+    ? `<span class="conn">and it</span><span class="wchip">${MATCH_W[a.match]||a.match}</span><span class="wchip kw">“${esc(a.keyword)}”</span>`
+    : `<span class="conn">and it includes</span><span class="wchip kw">any word</span>`;
+  const st = a.stats || {runs:0, sends:0};
+  const preview = [a.openingText ? '💬 '+a.openingText : '', a.reply].filter(Boolean).join('\n');
+  return `
+  <div class="card">
+    <div class="top">
+      ${a.enabled ? '<span class="live"><i></i>LIVE</span>' : '<span class="paused">PAUSED</span>'}
+      <span class="plat">${esc(a.platform)}</span>
+      <span style="flex:1"></span>
       <label class="switch" title="On / off"><input type="checkbox" ${a.enabled?'checked':''} onchange="toggleItem('${a.id}', this.checked)"><span class="track"></span></label>
-      <div class="actions">
-        <button class="btn ghost" onclick="openEditor('${a.id}')">Edit</button>
-        <button class="btn danger" onclick="delItem('${a.id}')">Delete</button>
-      </div>
-    </div>`).join('');
+    </div>
+    <h3 title="${esc(a.name)}">${esc(a.name)}</h3>
+    <div class="sentence"><span class="wchip">${trig}</span>${kw}</div>
+    ${preview?`<div class="prev">${esc(preview)}${(a.links&&a.links.length)?`\n🔗 ${a.links.length} link${a.links.length>1?'s':''} attached`:''}</div>`:''}
+    <div class="meta">Modified ${fmtDate(a.updatedAt||a.createdAt)} · ${st.runs} runs · ${st.sends} sends (this session)</div>
+    <div class="actions">
+      <button class="btn ghost sm" onclick="openEditor('${a.id}')">Edit</button>
+      <button class="btn danger sm" onclick="delItem('${a.id}')">Delete</button>
+    </div>
+  </div>`;
 }
-function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
+function renderGrids(){
+  const html = items.length ? items.map(cardHTML).join('') : '<div class="empty">No automations yet. Pick a template above or hit <b>+ New Automation</b> to create your first keyword → DM rule.</div>';
+  $('list-home').innerHTML = html; $('list-auto').innerHTML = html;
+}
 async function toggleItem(id, enabled){ await api('/api/automations/'+id,{method:'PUT',body:JSON.stringify({enabled})}); loadAll(); }
 async function delItem(id){ if(!confirm('Delete this automation?')) return; await api('/api/automations/'+id,{method:'DELETE'}); loadAll(); }
 
+/* ---------- Editor ---------- */
+function curTrigger(){ return document.querySelector('input[name="trig"]:checked')?.value || 'comment'; }
+function curKwMode(){ return document.querySelector('input[name="kwmode"]:checked')?.value || 'specific'; }
+function setTrigger(t){ const r = document.querySelector(`input[name="trig"][value="${t}"]`); if(r) r.checked = true; }
 function addLinkRow(label='', url=''){
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:8px;margin-top:8px';
   row.innerHTML = `<input type="text" placeholder="Button label, e.g. Get the guide" value="${esc(label)}" style="flex:1">
     <input type="text" placeholder="https://…" value="${esc(url)}" style="flex:2">
-    <button type="button" class="btn danger" onclick="this.parentElement.remove()">✕</button>`;
+    <button type="button" class="btn danger sm" onclick="this.parentElement.remove();updatePreview()">✕</button>`;
   $('links').appendChild(row);
+  row.querySelectorAll('input').forEach(i => i.addEventListener('input', updatePreview));
 }
 function readLinks(){
   return [...$('links').children].map(r => ({ label: r.children[0].value.trim(), url: r.children[1].value.trim() })).filter(l => l.url);
 }
-function triggerHint(){
-  const t = $('f-trigger').value;
-  $('kw-optional').classList.toggle('hidden', t!=='story_reply');
+function syncEditor(){
+  const t = curTrigger();
+  document.querySelectorAll('#trig-opts .opt').forEach(o => o.classList.toggle('sel', o.querySelector('input').checked));
   $('media-wrap').classList.toggle('hidden', t!=='comment');
-  $('f-trigger-hint').textContent = {
-    comment: 'Fires when a post comment matches. Set it up before you post and it covers your next post.',
-    story_reply: 'Fires when someone replies to your story. With no keyword, every reply gets the DM.',
-    dm: 'Fires when someone sends you a DM that matches the keyword.'
-  }[t];
-}
-function openTemplate(t){
-  openEditor();
-  const presets = {
-    comment: { name:'Next post — comment keyword → links', keyword:'app' },
-    story_reply: { name:'Story replies → links', keyword:'' },
-    dm: { name:'DM keyword → links', keyword:'guide' },
-  };
-  $('f-trigger').value = t;
-  $('f-name').value = presets[t].name;
-  $('f-keyword').value = presets[t].keyword;
-  triggerHint();
+  $('pub-wrap').classList.toggle('hidden', t!=='comment');
+  // "Any word" is not offered for DM automations (would reply to every DM).
+  const anyRadio = document.querySelector('input[name="kwmode"][value="any"]');
+  if (t==='dm' && curKwMode()==='any') document.querySelector('input[name="kwmode"][value="specific"]').checked = true;
+  anyRadio.disabled = t==='dm';
+  $('any-note').textContent = t==='dm' ? 'Not available for DMs — a keyword keeps it from replying to everything.' : 'Fires no matter what they write.';
+  $('kw-fields').classList.toggle('hidden', curKwMode()==='any');
+  updatePreview();
 }
 function openEditor(id){
   editingId = id || null;
   const a = items.find(x=>x.id===id);
   $('ed-title').textContent = a ? 'Edit Automation' : 'New Automation';
   $('f-name').value = a?.name || ''; $('f-platform').value = a?.platform || 'instagram';
-  $('f-trigger').value = a?.trigger || 'comment';
+  setTrigger(a?.trigger || 'comment');
   $('f-match').value = a?.match || 'contains'; $('f-keyword').value = a?.keyword || '';
+  document.querySelector(`input[name="kwmode"][value="${a && !a.keyword && a.trigger!=='dm' ? 'any':'specific'}"]`).checked = true;
   $('f-media').value = a?.mediaId || '';
+  $('f-opening').value = a?.openingText || ''; $('f-button').value = a?.openingButton || '';
+  document.querySelectorAll('.pub-in').forEach((inp,i)=> inp.value = (a?.publicReplies||[])[i] || '');
   $('f-reply').value = a?.reply || ''; $('f-enabled').checked = a ? a.enabled : true;
   $('links').innerHTML = ''; (a?.links||[]).forEach(l => addLinkRow(l.label, l.url));
   $('count').textContent = ($('f-reply').value||'').length; $('edErr').textContent='';
-  triggerHint();
+  syncEditor();
   $('editor').showModal();
 }
-$('f-reply').addEventListener('input', e => $('count').textContent = e.target.value.length);
-
 async function saveEditor(){
-  const payload = { name:$('f-name').value, platform:$('f-platform').value, trigger:$('f-trigger').value, match:$('f-match').value,
-    keyword:$('f-keyword').value, mediaId:$('f-media').value, reply:$('f-reply').value, links:readLinks(), enabled:$('f-enabled').checked };
+  const kwMode = curKwMode(), t = curTrigger();
+  const payload = { name:$('f-name').value, platform:$('f-platform').value, trigger:t, match:$('f-match').value,
+    keyword: kwMode==='any' ? '' : $('f-keyword').value, mediaId: t==='comment' ? $('f-media').value : '',
+    openingText:$('f-opening').value, openingButton:$('f-button').value,
+    publicReplies: t==='comment' ? [...document.querySelectorAll('.pub-in')].map(i=>i.value.trim()).filter(Boolean) : [],
+    reply:$('f-reply').value, links:readLinks(), enabled:$('f-enabled').checked };
   try {
     if (editingId) await api('/api/automations/'+editingId,{method:'PUT',body:JSON.stringify(payload)});
     else await api('/api/automations',{method:'POST',body:JSON.stringify(payload)});
@@ -266,19 +479,57 @@ async function saveEditor(){
   } catch(e){ $('edErr').textContent = e.message; }
 }
 
+/* ---------- Phone preview ---------- */
+function pvTab(t){
+  ['post','comments','dm'].forEach(x=>{
+    $('pv-'+x).classList.toggle('hidden', x!==t);
+    document.querySelector(`.pv-tabs button[data-pv="${x}"]`).classList.toggle('active', x===t);
+  });
+}
+function composePreview(){
+  let out = $('f-reply').value || '';
+  for (const l of readLinks()) out += `\n\n${l.label||'Link'}: ${l.url}`;
+  return out.trim();
+}
+function updatePreview(){
+  const kwMode = curKwMode();
+  const kw = kwMode==='any' ? '' : $('f-keyword').value.trim();
+  const sample = kw ? `${kw} please!! 🙏` : 'Love this post! 🔥';
+  $('pv-sample').textContent = sample; $('pv-sample2').textContent = sample;
+  const pubs = [...document.querySelectorAll('.pub-in')].map(i=>i.value.trim()).filter(Boolean);
+  $('pv-pub').textContent = curTrigger()==='comment'
+    ? (pubs[0] || 'No public reply set — they’ll only get the DM.')
+    : 'Public replies only apply to comment automations.';
+  const opening = $('f-opening').value.trim(), btn = $('f-button').value.trim();
+  $('pv-open-wrap').innerHTML = opening
+    ? `<div class="bubble">${esc(opening)}</div>` + (btn ? `<span class="pill-btn">👉 ${esc(btn)}</span>` : '')
+    : `<div class="bubble none">No opening DM — the link DM below is sent on its own.</div>`;
+  const main = composePreview();
+  $('pv-main').innerHTML = main
+    ? `<div class="dm-note">— then —</div><div class="bubble">${esc(main)}</div>`
+    : `<div class="bubble none">Your link DM will appear here — add a message or a link in section 4.</div>`;
+}
+document.querySelectorAll('#ed-form input, #ed-form textarea, #ed-form select').forEach(el=>{
+  el.addEventListener('input', syncEditor); el.addEventListener('change', syncEditor);
+});
+$('f-reply').addEventListener('input', e => $('count').textContent = e.target.value.length);
+
+/* ---------- Tabs / activity ---------- */
 function showTab(t){
-  $('tab-auto').classList.toggle('hidden', t!=='auto');
-  $('tab-act').classList.toggle('hidden', t!=='act');
-  $('nav-auto').classList.toggle('active', t==='auto');
-  $('nav-act').classList.toggle('active', t==='act');
+  ['home','auto','act'].forEach(x=>{
+    $('tab-'+x).classList.toggle('hidden', x!==t);
+    $('nav-'+x).classList.toggle('active', x===t);
+  });
   if (t==='act') loadActivity();
 }
 async function loadActivity(){
   const acts = await api('/api/activity').catch(()=>[]);
-  $('actlist').innerHTML = acts.length ? acts.map(x=>`<div class="act"><time>${new Date(x.time).toLocaleString()}</time><div><b>${esc(x.type)}</b> — ${esc(x.detail)}</div></div>`).join('')
-    : '<div class="empty">Nothing yet. When comments come in, they show up here.</div>';
+  const cls = ty => ty==='dm_sent'||ty==='public_reply' ? 'ok' : (ty.includes('failed') ? 'bad' : 'info');
+  $('actlist').innerHTML = acts.length ? acts.map(x=>`<div class="act ${cls(x.type)}"><span class="dot"></span><time>${new Date(x.time).toLocaleString()}</time><div><b>${esc(x.type)}</b> — ${esc(x.detail)}</div></div>`).join('')
+    : '<div class="empty">Nothing yet. When comments, story replies and DMs come in, they show up here.</div>';
 }
 
+renderTemplates();
 loadAll().then(showApp).catch(()=>showLogin());
 </script>
 </body>
