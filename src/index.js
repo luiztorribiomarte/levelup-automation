@@ -9,7 +9,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { sendPrivateReply, sendDM, sendCommentReply } = require('./meta');
+const { sendPrivateReply, sendDM, sendCommentReply, sendPageCommentReply, sendThreadsReply } = require('./meta');
 
 const app = express();
 app.use(express.json());
@@ -224,6 +224,7 @@ app.put('/api/automations/:id', requireAuth, (req, res) => {
   if (!a) return res.status(404).json({ error: 'Automation not found' });
   const b = req.body || {};
   if (b.name !== undefined) a.name = String(b.name).slice(0, 80);
+  if (b.platform !== undefined && ['instagram', 'facebook', 'threads'].includes(b.platform)) a.platform = b.platform;
   if (b.trigger !== undefined && TRIGGERS.includes(b.trigger)) a.trigger = b.trigger;
   if (b.keyword !== undefined) a.keyword = String(b.keyword).trim().slice(0, 60);
   if (b.match !== undefined && ['contains', 'exact', 'starts'].includes(b.match)) a.match = b.match;
@@ -298,7 +299,10 @@ app.post('/webhook', (req, res) => {
 });
 
 async function handleEvent(body) {
-  if (!body || body.object !== 'instagram') return;
+  if (!body) return;
+  if (body.object === 'page') return handlePageEvent(body);
+  if (body.object === 'threads') return handleThreadsEvent(body);
+  if (body.object !== 'instagram') return;
   for (const entry of body.entry || []) {
     // --- Comment events (entry.changes) ---
     for (const change of entry.changes || []) {
@@ -377,6 +381,126 @@ async function handleEvent(body) {
           const sent = await deliverMessages(hit, (text) => sendDM(senderId, text), label);
           if (sent) console.log(`DM sent for DM keyword from ${senderId} (keyword: "${hit.keyword}")`);
         }
+      }
+    }
+  }
+}
+
+// ---------- Facebook (Pages + Messenger) ----------
+// Same subscription endpoint, object === 'page'. Post comments arrive as
+// entry.changes with field 'feed'; Messenger DMs arrive as entry.messaging.
+// Both send with the Page access token via the same Graph calls as IG.
+async function handlePageEvent(body) {
+  for (const entry of body.entry || []) {
+    // --- Page post comments (entry.changes, field 'feed') ---
+    for (const change of entry.changes || []) {
+      const value = change.value || {};
+      if (change.field !== 'feed' || value.item !== 'comment' || value.verb !== 'add') continue;
+      const commentId = value.comment_id || value.id;
+      const text = value.message || '';
+      if (!commentId) continue;
+      const dedupeKey = `fb:${commentId}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      logActivity('comment', `Facebook: "${String(text).slice(0, 80)}"`);
+      const hit = automations.find(
+        (a) =>
+          a.enabled &&
+          a.platform === 'facebook' &&
+          a.trigger === 'comment' &&
+          (!a.mediaId || a.mediaId === value.post_id) &&
+          (!a.keyword || matches(a, text)) // blank keyword = "any word"
+      );
+      if (!hit) continue;
+      bumpStats(hit.id, 'runs');
+      const label = `Facebook comment trigger "${hit.keyword}" on comment ${commentId}`;
+      // Optional rotating public reply under their comment, isolated from
+      // the DM exactly like the IG path. FB endpoint: POST /{id}/comments.
+      if (hit.publicReplies && hit.publicReplies.length) {
+        const replyText = hit.publicReplies[Math.floor(Math.random() * hit.publicReplies.length)];
+        try {
+          await sendPageCommentReply(commentId, replyText);
+          logActivity('public_reply', `${label} — public reply posted`);
+        } catch (e) {
+          console.error('FB public reply failed:', e.message);
+          logActivity('public_reply_failed', `${label} — public reply failed: ${String(e.message).slice(0, 120)}`);
+        }
+      }
+      // Private reply = the FB equivalent of the IG comment -> DM trick.
+      const sent = await deliverMessages(hit, (t) => sendPrivateReply(commentId, t), label);
+      if (sent) console.log(`DM sent for Facebook comment ${commentId} (keyword: "${hit.keyword}")`);
+    }
+
+    // --- Messenger DMs (entry.messaging) ---
+    for (const ev of entry.messaging || []) {
+      const msg = ev.message || {};
+      if (msg.is_echo) continue;
+      const mid = msg.mid || `${ev.sender && ev.sender.id}-${ev.timestamp}`;
+      const dedupeKey = `fb:${mid}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      const text = msg.text || '';
+      const senderId = ev.sender && ev.sender.id;
+      if (!senderId || !text) continue;
+      // No story-reply trigger on Facebook Pages — plain DM keyword only.
+      logActivity('dm', `Facebook DM from ${senderId}: "${String(text).slice(0, 60)}"`);
+      const hit = automations.find(
+        (a) => a.enabled && a.platform === 'facebook' && a.trigger === 'dm' && matches(a, text)
+      );
+      if (hit) {
+        bumpStats(hit.id, 'runs');
+        const label = `Facebook DM trigger "${hit.keyword}" to ${senderId}`;
+        const sent = await deliverMessages(hit, (t) => sendDM(senderId, t), label);
+        if (sent) console.log(`DM sent for Facebook DM keyword from ${senderId} (keyword: "${hit.keyword}")`);
+      }
+    }
+  }
+}
+
+// ---------- Threads (plumbing level) ----------
+// object === 'threads'. Threads has no DMs, so an automation's composed
+// reply text (reply + links as text lines) is delivered as a public reply.
+// Defensive by design: every event is logged, matching never crashes, and a
+// missing THREADS_ACCESS_TOKEN just logs 'threads token not configured'.
+async function handleThreadsEvent(body) {
+  for (const entry of body.entry || []) {
+    for (const change of entry.changes || []) {
+      const value = change.value || {};
+      const text = value.text || '';
+      const targetId = value.id || value.reply_id;
+      logActivity('threads', `"${String(text || change.field || '').slice(0, 80)}"`);
+      if (!text || !targetId) continue;
+      const dedupeKey = `threads:${targetId}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      const hit = automations.find(
+        (a) =>
+          a.enabled &&
+          a.platform === 'threads' &&
+          a.trigger === 'comment' &&
+          (!a.mediaId ||
+            a.mediaId === value.media_id ||
+            a.mediaId === value.post_id ||
+            a.mediaId === (value.media && value.media.id)) &&
+          (!a.keyword || matches(a, text)) // blank keyword = "any word"
+      );
+      if (!hit) continue;
+      bumpStats(hit.id, 'runs');
+      const label = `Threads trigger "${hit.keyword}" on ${targetId}`;
+      const replyText = (hit.openingText ? `${hit.openingText}\n\n` : '') + composeMessage(hit);
+      if (!process.env.THREADS_ACCESS_TOKEN) {
+        console.log('threads token not configured — reply not sent');
+        logActivity('threads_reply_failed', `${label} — threads token not configured`);
+        continue;
+      }
+      try {
+        await sendThreadsReply(targetId, replyText);
+        bumpStats(hit.id, 'sends');
+        logActivity('threads_reply', label);
+        console.log(`Threads reply sent for ${targetId} (keyword: "${hit.keyword}")`);
+      } catch (e) {
+        console.error('Threads reply failed:', e.message);
+        logActivity('threads_reply_failed', `${label} — failed: ${String(e.message).slice(0, 120)}`);
       }
     }
   }
