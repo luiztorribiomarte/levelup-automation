@@ -12,3 +12,5 @@ services:
         sync: false
       - key: DASHBOARD_PASSWORD
         sync: false
+      - key: THREADS_ACCESS_TOKEN
+        sync: false
