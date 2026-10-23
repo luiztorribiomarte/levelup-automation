@@ -81,6 +81,20 @@
   .switch input:checked + .track:before{transform:translateX(19px)}
   .empty{color:var(--mut);background:var(--card);border:1.5px dashed #D5DAE3;border-radius:var(--rad);padding:30px;text-align:center;font-size:14.5px}
   .rowhead{display:flex;justify-content:space-between;align-items:center;margin:4px 0 14px}
+  .grid .empty{grid-column:1/-1}
+
+  /* ---------- Platform dots / tiles ---------- */
+  .pdot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .pdot.ig{background:linear-gradient(45deg,#FEDA75,#FA7E1E,#D62976,#962FBF)}
+  .pdot.fb{background:#1877F2}
+  .pdot.th{background:#0B1526}
+  .plats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:26px}
+  .plat-tile{background:var(--card);border-radius:var(--rad);box-shadow:var(--shadow);padding:16px 18px;text-align:left;border:1px solid transparent;cursor:pointer;width:100%}
+  .plat-tile:hover{border-color:#CFE0FF}
+  .plat-tile h3{margin:0;font-size:16px;display:inline;vertical-align:middle}
+  .plat-tile p{margin:8px 0 0;color:var(--mut);font-size:13.5px}
+  .plat-tile p b{color:var(--ink)}
+  .locknote{font-size:12.5px;color:var(--mut);margin-top:6px}
 
   /* ---------- Activity ---------- */
   .act{display:flex;gap:12px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:8px;font-size:14px;align-items:baseline}
@@ -160,11 +174,13 @@
     <div class="logo">LEVEL UP <span>AUTOMATION</span></div>
     <nav>
       <button id="nav-home" class="active" onclick="showTab('home')">🏠 Home</button>
-      <button id="nav-auto" onclick="showTab('auto')">⚡ Automations</button>
+      <button id="nav-instagram" onclick="showTab('instagram')"><span class="pdot ig"></span> Instagram</button>
+      <button id="nav-facebook" onclick="showTab('facebook')"><span class="pdot fb"></span> Facebook</button>
+      <button id="nav-threads" onclick="showTab('threads')"><span class="pdot th"></span> Threads</button>
       <button id="nav-act" onclick="showTab('act')">🕘 Activity</button>
       <button onclick="doLogout()">Log out</button>
     </nav>
-    <div class="foot">Instagram is live.<br>Facebook &amp; Threads automations are coming next — Threads stays paused for now.</div>
+    <div class="foot">Each platform lives on its own page.<br>Instagram is live in test mode. Facebook's Page is connected. Threads posting stays paused — automations are plumbing-ready.</div>
   </aside>
 
   <main class="main">
@@ -180,19 +196,53 @@
       </div>
       <div class="strip">👋 <b>Start here:</b> pick a template below, set your keyword and links, flip it live. Build it <b>before</b> you post so it catches your next post.</div>
       <div class="tpls" id="tpls-home"></div>
-      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your automations</h2>
-        <button class="btn" onclick="openEditor()">+ New Automation</button></div>
-      <div class="grid" id="list-home"></div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Platforms</h2></div>
+      <div class="plats" id="plats-home"></div>
     </section>
 
-    <!-- AUTOMATIONS -->
-    <section id="tab-auto" class="hidden">
-      <h1>Automations</h1>
-      <p class="sub">Every rule below runs itself. Toggle one off to pause it — nothing gets deleted.</p>
-      <div class="tpls" id="tpls-auto"></div>
-      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your automations</h2>
-        <button class="btn" onclick="openEditor()">+ New Automation</button></div>
-      <div class="grid" id="list-auto"></div>
+    <!-- INSTAGRAM -->
+    <section id="tab-instagram" class="hidden">
+      <h1><span class="pdot ig"></span> Instagram</h1>
+      <p class="sub">Live in test mode — comment, story-reply and DM automations for @projectlevelup1.</p>
+      <div class="stats">
+        <div class="stat"><b id="st-instagram-total">–</b><small>Automations</small></div>
+        <div class="stat"><b id="st-instagram-active">–</b><small>Active</small></div>
+        <div class="stat"><b id="st-instagram-runs">–</b><small>Runs (session)</small></div>
+        <div class="stat"><b id="st-instagram-sends">–</b><small>Sends (session)</small></div>
+      </div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your Instagram automations</h2>
+        <button class="btn" onclick="openEditor(null,'instagram')">+ New Automation</button></div>
+      <div class="grid" id="list-instagram"></div>
+    </section>
+
+    <!-- FACEBOOK -->
+    <section id="tab-facebook" class="hidden">
+      <h1><span class="pdot fb"></span> Facebook</h1>
+      <p class="sub">Page connected — automations for your Facebook Page: post comments and Messenger DMs.</p>
+      <div class="stats">
+        <div class="stat"><b id="st-facebook-total">–</b><small>Automations</small></div>
+        <div class="stat"><b id="st-facebook-active">–</b><small>Active</small></div>
+        <div class="stat"><b id="st-facebook-runs">–</b><small>Runs (session)</small></div>
+        <div class="stat"><b id="st-facebook-sends">–</b><small>Sends (session)</small></div>
+      </div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your Facebook automations</h2>
+        <button class="btn" onclick="openEditor(null,'facebook')">+ New Automation</button></div>
+      <div class="grid" id="list-facebook"></div>
+    </section>
+
+    <!-- THREADS -->
+    <section id="tab-threads" class="hidden">
+      <h1><span class="pdot th"></span> Threads</h1>
+      <p class="sub">Posting paused by owner — automations are plumbing-ready (replies / mentions; Threads has no DMs).</p>
+      <div class="stats">
+        <div class="stat"><b id="st-threads-total">–</b><small>Automations</small></div>
+        <div class="stat"><b id="st-threads-active">–</b><small>Active</small></div>
+        <div class="stat"><b id="st-threads-runs">–</b><small>Runs (session)</small></div>
+        <div class="stat"><b id="st-threads-sends">–</b><small>Sends (session)</small></div>
+      </div>
+      <div class="rowhead"><h2 style="margin:0;font-size:19px">Your Threads automations</h2>
+        <button class="btn" onclick="openEditor(null,'threads')">+ New Automation</button></div>
+      <div class="grid" id="list-threads"></div>
     </section>
 
     <!-- ACTIVITY -->
@@ -219,6 +269,7 @@
         <option value="facebook">Facebook</option>
         <option value="threads">Threads</option>
       </select>
+      <div class="locknote hidden" id="platform-lock-note"></div>
 
       <div class="sec" style="margin-top:16px">
         <h3>1 · When someone…</h3>
@@ -318,7 +369,7 @@
 </dialog>
 
 <script>
-let items = [], editingId = null, actCount = 0;
+let items = [], editingId = null, actCount = 0, edPlatform = 'instagram';
 const $ = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -359,7 +410,7 @@ function renderTemplates(){
       <h3>${esc(t.title)} ${t.badge?`<span class="badge">${t.badge}</span>`:''}</h3>
       <p>${esc(t.blurb)}</p>
     </button>`).join('');
-  $('tpls-home').innerHTML = html; $('tpls-auto').innerHTML = html;
+  $('tpls-home').innerHTML = html;
 }
 function openTemplate(key){
   const t = TEMPLATES.find(x=>x.key===key);
@@ -381,8 +432,8 @@ async function loadAll(){
     actCount = acts.length;
     $('st-total').textContent = s.automations; $('st-active').textContent = s.active;
     $('st-dms').textContent = s.dmsSent; $('st-events').textContent = actCount;
-    renderGrids();
-  } catch(e){ if(e.message!=='auth') { const h='<div class="empty">'+esc(e.message)+'</div>'; $('list-home').innerHTML=h; $('list-auto').innerHTML=h; } }
+    renderPlatforms();
+  } catch(e){ if(e.message!=='auth') { const h='<div class="empty">'+esc(e.message)+'</div>'; PLATFORM_KEYS.forEach(p=>{ $('list-'+p).innerHTML=h; }); } }
 }
 const TRIG_SENT = { comment:'User comments on a post', story_reply:'User replies to your story', dm:'User DMs you' };
 const MATCH_W = { contains:'contains', exact:'is exactly', starts:'starts with' };
@@ -413,9 +464,23 @@ function cardHTML(a){
     </div>
   </div>`;
 }
-function renderGrids(){
-  const html = items.length ? items.map(cardHTML).join('') : '<div class="empty">No automations yet. Pick a template above or hit <b>+ New Automation</b> to create your first keyword → DM rule.</div>';
-  $('list-home').innerHTML = html; $('list-auto').innerHTML = html;
+const PLATFORM_KEYS = ['instagram','facebook','threads'];
+const PLATFORM_NAMES = { instagram:'Instagram', facebook:'Facebook', threads:'Threads' };
+const PLATFORM_DOTS = { instagram:'ig', facebook:'fb', threads:'th' };
+function renderPlatforms(){
+  for (const p of PLATFORM_KEYS){
+    const list = items.filter(a=>a.platform===p);
+    $('list-'+p).innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty">No automations here yet — create your first one.</div>';
+    $('st-'+p+'-total').textContent = list.length;
+    $('st-'+p+'-active').textContent = list.filter(a=>a.enabled).length;
+    $('st-'+p+'-runs').textContent = list.reduce((n,a)=>n+((a.stats&&a.stats.runs)||0),0);
+    $('st-'+p+'-sends').textContent = list.reduce((n,a)=>n+((a.stats&&a.stats.sends)||0),0);
+  }
+  $('plats-home').innerHTML = PLATFORM_KEYS.map(p=>{
+    const list = items.filter(a=>a.platform===p);
+    const act = list.filter(a=>a.enabled).length;
+    return `<button class="plat-tile" onclick="showTab('${p}')"><span class="pdot ${PLATFORM_DOTS[p]}"></span> <h3>${PLATFORM_NAMES[p]}</h3><p><b>${list.length}</b> automation${list.length===1?'':'s'} · <b>${act}</b> active</p></button>`;
+  }).join('');
 }
 async function toggleItem(id, enabled){ await api('/api/automations/'+id,{method:'PUT',body:JSON.stringify({enabled})}); loadAll(); }
 async function delItem(id){ if(!confirm('Delete this automation?')) return; await api('/api/automations/'+id,{method:'DELETE'}); loadAll(); }
@@ -440,7 +505,10 @@ function syncEditor(){
   // Platform decides which triggers exist: story replies are Instagram-only,
   // Threads has no DMs (its "comment" trigger is a reply / mention), Facebook
   // gets comments + Messenger DMs.
-  const plat = $('f-platform').value;
+  // When the select is locked, its DOM value is not authoritative — the
+  // editor's platform lives in edPlatform state (set by openEditor).
+  const plat = $('f-platform').disabled ? edPlatform : $('f-platform').value;
+  edPlatform = plat;
   $('trig-opt-story').classList.toggle('hidden', plat!=='instagram');
   $('trig-opt-dm').classList.toggle('hidden', plat==='threads');
   $('trig-comment-title').textContent = plat==='threads' ? '💬 Reply / mention' : '💬 Comments on a post';
@@ -458,11 +526,22 @@ function syncEditor(){
   $('kw-fields').classList.toggle('hidden', curKwMode()==='any');
   updatePreview();
 }
-function openEditor(id){
+function openEditor(id, platformPreset){
   editingId = id || null;
   const a = items.find(x=>x.id===id);
   $('ed-title').textContent = a ? 'Edit Automation' : 'New Automation';
-  $('f-name').value = a?.name || ''; $('f-platform').value = a?.platform || 'instagram';
+  // Platform is the automation's identity: locked when editing an existing
+  // automation and when opened from a platform page (platformPreset); free
+  // only when opened from Home (templates / generic new). edPlatform — not
+  // the possibly-disabled <select> — is what gets saved.
+  edPlatform = a ? (a.platform || 'instagram') : (platformPreset || 'instagram');
+  const sel = $('f-platform');
+  sel.value = edPlatform;
+  sel.disabled = !!a || !!platformPreset;
+  const note = $('platform-lock-note');
+  note.textContent = a ? 'Platform can’t be changed for an existing automation.' : (platformPreset ? 'Platform is set by this page.' : '');
+  note.classList.toggle('hidden', !sel.disabled);
+  $('f-name').value = a?.name || '';
   setTrigger(a?.trigger || 'comment');
   $('f-match').value = a?.match || 'contains'; $('f-keyword').value = a?.keyword || '';
   document.querySelector(`input[name="kwmode"][value="${a && !a.keyword && a.trigger!=='dm' ? 'any':'specific'}"]`).checked = true;
@@ -477,7 +556,7 @@ function openEditor(id){
 }
 async function saveEditor(){
   const kwMode = curKwMode(), t = curTrigger();
-  const payload = { name:$('f-name').value, platform:$('f-platform').value, trigger:t, match:$('f-match').value,
+  const payload = { name:$('f-name').value, platform:edPlatform, trigger:t, match:$('f-match').value,
     keyword: kwMode==='any' ? '' : $('f-keyword').value, mediaId: t==='comment' ? $('f-media').value : '',
     openingText:$('f-opening').value, openingButton:$('f-button').value,
     publicReplies: t==='comment' ? [...document.querySelectorAll('.pub-in')].map(i=>i.value.trim()).filter(Boolean) : [],
@@ -526,7 +605,7 @@ $('f-reply').addEventListener('input', e => $('count').textContent = e.target.va
 
 /* ---------- Tabs / activity ---------- */
 function showTab(t){
-  ['home','auto','act'].forEach(x=>{
+  ['home','instagram','facebook','threads','act'].forEach(x=>{
     $('tab-'+x).classList.toggle('hidden', x!==t);
     $('nav-'+x).classList.toggle('active', x===t);
   });
